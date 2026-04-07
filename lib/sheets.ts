@@ -19,12 +19,24 @@ function getAuth() {
   })
 }
 
+// Fetch the actual first tab name so hardcoded "Sheet1" doesn't silently break
+async function getFirstSheetName(): Promise<string> {
+  try {
+    const sheets = google.sheets({ version: "v4", auth: getAuth() })
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID })
+    return meta.data.sheets?.[0]?.properties?.title ?? "Sheet1"
+  } catch {
+    return "Sheet1"
+  }
+}
+
 export async function getCachedAnalysis(ticker: string): Promise<{ data: CachedAnalysis; rowIndex: number } | null> {
   try {
     const sheets = google.sheets({ version: "v4", auth: getAuth() })
+    const tab = await getFirstSheetName()
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:F",
+      range: `${tab}!A:F`,
     })
     const rows = res.data.values ?? []
     const rowIndex = rows.findIndex((r) => r[0] === ticker)
@@ -56,6 +68,7 @@ export async function setCachedAnalysis(
 ): Promise<void> {
   try {
     const sheets = google.sheets({ version: "v4", auth: getAuth() })
+    const tab = await getFirstSheetName()
     const values = [[
       ticker,
       companyName,
@@ -66,24 +79,21 @@ export async function setCachedAnalysis(
     ]]
 
     if (rowIndex) {
-      // Update the existing stale row
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `Sheet1!A${rowIndex}:F${rowIndex}`,
+        range: `${tab}!A${rowIndex}:F${rowIndex}`,
         valueInputOption: "RAW",
         requestBody: { values },
       })
     } else {
-      // Append a new row
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: "Sheet1!A:F",
+        range: `${tab}!A:F`,
         valueInputOption: "RAW",
         requestBody: { values },
       })
     }
   } catch (err) {
     console.error("Sheets cache write failed:", err)
-    // Don't throw — a cache failure should never break the app
   }
 }

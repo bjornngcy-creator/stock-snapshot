@@ -96,8 +96,8 @@ Rules:
 
     const parsed = JSON.parse(jsonMatch[0])
 
-    // ── Save to cache (don't await — let it run in background) ───────────
-    setCachedAnalysis(ticker, companyName as string, parsed)
+    // ── Save to cache before responding (serverless stops on response) ───
+    await setCachedAnalysis(ticker, companyName as string, parsed)
 
     return NextResponse.json({ ticker, companyName, ...parsed, news: newsResults })
   } catch (err: any) {
