@@ -14,6 +14,7 @@ interface AnalysisData {
   businessOverview: string
   strengths: string[]
   weaknesses: string[]
+  news?: { title: string; publisher: string; url: string }[]
 }
 
 export default function Home() {
@@ -104,8 +105,8 @@ export default function Home() {
 
         {/* Header */}
         <div className="relative text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">StockSnapshot</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Bird's eye view of any company</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Stock Health Checker</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Is this stock worth a closer look?</p>
           <button
             onClick={toggleTheme}
             className="absolute right-0 top-0 w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
@@ -177,6 +178,32 @@ export default function Home() {
         )}
 
       </div>
+
+      {/* Footer */}
+      <footer className="mt-12 flex flex-col items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
+        <a
+          href="https://linktr.ee/investwithbjorn"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="/bjorn-banner.png"
+            alt="Invest with Bjorn"
+            className="h-16 w-auto rounded-xl object-contain opacity-90 hover:opacity-100 transition-opacity"
+          />
+        </a>
+        <span>
+          Built by{" "}
+          <a
+            href="https://linktr.ee/investwithbjorn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          >
+            Invest with Bjorn
+          </a>
+        </span>
+      </footer>
 
       <HistoryDrawer
         open={historyOpen}

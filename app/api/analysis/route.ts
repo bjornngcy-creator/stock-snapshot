@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { tavily } from "@tavily/core"
+import { getCachedAnalysis, setCachedAnalysis } from "@/lib/sheets"
+import YahooFinance from "yahoo-finance2"
+
+const yf = new YahooFinance({
+  suppressNotices: ["yahooSurvey"],
+  validation: { logErrors: false },
+})
 
 export const dynamic = "force-dynamic"
+
+async function fetchYahooNews(ticker: string): Promise<{ title: string; publisher: string; url: string }[]> {
+  try {
+    const result = await yf.search(ticker, { newsCount: 5, quotesCount: 0 })
+    return (result.news ?? []).slice(0, 5).map((item: any) => ({
+      title: item.title,
+      publisher: item.publisher ?? "",
+      url: item.link,
+    }))
+  } catch {
+    return []
+  }
+}
 
 export async function GET(req: NextRequest) {
   const ticker = req.nextUrl.searchParams.get("ticker")?.toUpperCase()
@@ -10,6 +30,23 @@ export async function GET(req: NextRequest) {
   if (!ticker) return NextResponse.json({ error: "No ticker provided" }, { status: 400 })
 
   try {
+    // ── Check cache first ────────────────────────────────────────────────
+    const [cached, newsResults] = await Promise.all([
+      getCachedAnalysis(ticker),
+      fetchYahooNews(ticker),
+    ])
+
+    if (cached) {
+      return NextResponse.json({
+        ticker,
+        companyName,
+        ...cached.data,
+        news: newsResults,
+        fromCache: true,
+      })
+    }
+
+    // ── Cache miss — call Gemini + Tavily ────────────────────────────────
     const genai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
     const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY! })
 
@@ -51,14 +88,18 @@ Rules:
 - strengths: focus on durable competitive advantages and market position
 - weaknesses: focus on material risks, threats, or structural vulnerabilities`
 
-    const model = genai.getGenerativeModel({ model: "gemini-flash-lite-latest" })
+    const model = genai.getGenerativeModel({ model: "gemini-2.5-flash-lite" })
     const result = await model.generateContent(prompt)
     const raw = result.response.text()
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error("Could not parse Gemini response as JSON")
 
     const parsed = JSON.parse(jsonMatch[0])
-    return NextResponse.json({ ticker, companyName, ...parsed })
+
+    // ── Save to cache (don't await — let it run in background) ───────────
+    setCachedAnalysis(ticker, companyName as string, parsed)
+
+    return NextResponse.json({ ticker, companyName, ...parsed, news: newsResults })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
