@@ -100,6 +100,7 @@ type SwapMetric = {
   color: string
   lowerIsBetter?: boolean
   showTrend?: boolean
+  yoyMode?: boolean
   description: string
 }
 
