@@ -60,6 +60,11 @@ export interface AnalystConsensus {
   numberOfAnalysts: number | null
 }
 
+export interface PricePoint {
+  date: string
+  price: number
+}
+
 export interface SnapshotFinancials {
   ticker: string
   companyName: string
@@ -75,6 +80,8 @@ export interface SnapshotFinancials {
   peRatio5yrAvg: number | null
   forwardPE: number | null
   forwardPE5yrAvg: number | null
+  priceHistory1Y: PricePoint[]
+  priceHistory5Y: PricePoint[]
   metrics: {
     revenue: MetricPoint[]
     grossMargin: MetricPoint[]
@@ -98,7 +105,11 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
   // StockAnalysis uses dot notation for class-B shares (BRK-B → brk.b)
   const t = ticker.toLowerCase().replace(/-([a-z])$/, ".$1")
 
-  const [incHtml, bsHtml, valHtml, summary, quote] = await Promise.all([
+  const now = new Date()
+  const date1Y = new Date(now); date1Y.setFullYear(now.getFullYear() - 1)
+  const date5Y = new Date(now); date5Y.setFullYear(now.getFullYear() - 5)
+
+  const [incHtml, bsHtml, valHtml, summary, quote, hist1Y, hist5Y] = await Promise.all([
     fetchPage(`https://stockanalysis.com/stocks/${t}/financials/?p=annual`),
     fetchPage(`https://stockanalysis.com/stocks/${t}/financials/balance-sheet/?p=annual`),
     fetchPage(`https://stockanalysis.com/stocks/${t}/financials/ratios/?p=annual`).catch(() =>
@@ -108,6 +119,8 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
       modules: ["financialData", "summaryDetail", "summaryProfile", "defaultKeyStatistics", "recommendationTrend", "calendarEvents"] as const,
     }),
     yf.quote(ticker),
+    yf.historical(ticker, { period1: date1Y, period2: now, interval: "1d" }).catch(() => []),
+    yf.historical(ticker, { period1: date5Y, period2: now, interval: "1wk" }).catch(() => []),
   ])
 
   // ── Company info ──────────────────────────────────────────────────────
@@ -335,6 +348,18 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
   const forwardPE = (summary as any).defaultKeyStatistics?.forwardPE ?? null
   const forwardPE5yrAvg = avg5yr(fwdPeHistVals, valHasTTM)
 
+  function buildPriceSeries(rows: any[]): PricePoint[] {
+    return rows
+      .filter((r) => r.adjClose != null || r.close != null)
+      .map((r) => ({
+        date: new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        price: Math.round((r.adjClose ?? r.close) * 100) / 100,
+      }))
+  }
+
+  const priceHistory1Y = buildPriceSeries(hist1Y as any[])
+  const priceHistory5Y = buildPriceSeries(hist5Y as any[])
+
   return {
     ticker,
     companyName,
@@ -350,6 +375,8 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     peRatio5yrAvg,
     forwardPE,
     forwardPE5yrAvg,
+    priceHistory1Y,
+    priceHistory5Y,
     metrics: {
       revenue: revSeries,
       grossMargin: grossMarginSeries,

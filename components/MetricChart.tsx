@@ -65,7 +65,7 @@ export default function MetricChart({ title, data, format, color, lowerIsBetter,
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-2 sm:p-4">
       <div className="flex items-start justify-between mb-1">
         <div className="flex items-center gap-1 min-w-0">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight">
+          <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-tight">
             {title}
           </p>
           {description && (

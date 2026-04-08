@@ -158,12 +158,14 @@ export default function Home() {
     return (
       <main className="relative min-h-screen bg-[#06080f] flex items-center justify-center px-4 overflow-hidden">
 
-        {/* Animated gradient orbs — large and vivid */}
-        <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full blob"
+        <div className="noise-overlay" />
+
+        {/* Static gradient orbs */}
+        <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(59,130,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full blob blob-delay-2"
+        <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full blob blob-delay-4"
+        <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)", filter: "blur(50px)" }} />
 
         <div className="relative w-full max-w-md fade-in-up">
@@ -173,7 +175,10 @@ export default function Home() {
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(40px)",
               WebkitBackdropFilter: "blur(40px)",
-              border: "1px solid rgba(255,255,255,0.15)",
+              borderTop: "1px solid rgba(255,255,255,0.28)",
+              borderLeft: "1px solid rgba(255,255,255,0.08)",
+              borderRight: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
               boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
             }}>
 
@@ -260,7 +265,10 @@ export default function Home() {
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(40px)",
               WebkitBackdropFilter: "blur(40px)",
-              border: "1px solid rgba(255,255,255,0.15)",
+              borderTop: "1px solid rgba(255,255,255,0.28)",
+              borderLeft: "1px solid rgba(255,255,255,0.08)",
+              borderRight: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
               boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
             }}>
 
@@ -311,40 +319,103 @@ export default function Home() {
   return (
     <main className="relative min-h-screen bg-[#06080f] py-10 px-3 sm:px-6 overflow-x-hidden">
 
-      {/* Background orbs — subtle, always present */}
-      <div className="pointer-events-none fixed top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full blob"
+      <div className="noise-overlay" />
+
+      {/* Static background orbs */}
+      <div className="pointer-events-none fixed top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full"
         style={{ background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
-      <div className="pointer-events-none fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blob blob-delay-2"
+      <div className="pointer-events-none fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full"
         style={{ background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
-      <div className="pointer-events-none fixed top-[40%] right-[20%] w-[400px] h-[400px] rounded-full blob blob-delay-4"
+      <div className="pointer-events-none fixed top-[40%] right-[20%] w-[400px] h-[400px] rounded-full"
         style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 65%)", filter: "blur(70px)" }} />
 
       <div className="relative max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="relative text-center mb-8 fade-in-up">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1"
-            style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            Stock Health Checker
-          </h1>
-          <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
-          <button
-            onClick={toggleTheme}
-            className="absolute right-0 top-0 w-9 h-9 flex items-center justify-center rounded-xl transition-colors"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
-        </div>
+        {/* Shared social icons snippet — rendered in both layouts */}
+        {(() => {
+          const socialIcons = (
+            <div className="flex items-center gap-1.5">
+              <a href="https://youtube.com/@investwithbjorn" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-opacity hover:opacity-100"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", opacity: 0.75 }}
+                title="YouTube">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </a>
+              <a href="https://tiktok.com/@investwithbjorn" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-opacity hover:opacity-100"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", opacity: 0.75 }}
+                title="TikTok">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+                </svg>
+              </a>
+              <a href="https://t.me/investwithbjorn" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-opacity hover:opacity-100"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", opacity: 0.75 }}
+                title="Telegram">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+              </a>
+            </div>
+          )
+          const themeBtn = (
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors shrink-0"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isDark ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+          )
+          return (
+            <div className="mb-8 fade-in-up">
+
+              {/* Mobile: centered stack */}
+              <div className="sm:hidden flex flex-col items-center gap-2 mb-4">
+                <img src="/bjorn-banner.png" alt="Invest with Bjorn" className="w-[120px] h-auto rounded-xl object-contain" />
+                {socialIcons}
+              </div>
+              <div className="sm:hidden flex items-start justify-between mb-1">
+                <div className="text-left">
+                  <h1 className="text-2xl font-bold mb-0.5"
+                    style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                    Stock Health Checker
+                  </h1>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
+                </div>
+                {themeBtn}
+              </div>
+
+              {/* Desktop: brand+socials left, title center, toggle right */}
+              <div className="hidden sm:block relative text-center">
+                <h1 className="text-3xl font-bold mb-1"
+                  style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  Stock Health Checker
+                </h1>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
+                <div className="absolute left-0 top-0 flex flex-col items-start gap-1.5">
+                  <img src="/bjorn-banner.png" alt="Invest with Bjorn" className="w-[120px] h-auto rounded-xl object-contain" />
+                  {socialIcons}
+                </div>
+                <div className="absolute right-0 top-0">{themeBtn}</div>
+              </div>
+
+            </div>
+          )
+        })()}
 
         {/* Search row */}
         <div className="flex flex-col sm:flex-row gap-3 mb-8 items-center sm:justify-center fade-in-up">
@@ -410,13 +481,6 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative mt-12 flex flex-col items-center gap-3 text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>
-        <a href="https://linktr.ee/investwithbjorn" target="_blank" rel="noopener noreferrer">
-          <img
-            src="/bjorn-banner.png"
-            alt="Invest with Bjorn"
-            className="h-16 w-auto rounded-xl object-contain opacity-60 hover:opacity-90 transition-opacity"
-          />
-        </a>
         <span>
           Built by{" "}
           <a

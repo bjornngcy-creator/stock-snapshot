@@ -3,6 +3,7 @@
 import { useState } from "react"
 import MetricChart from "./MetricChart"
 import MetricNA from "./MetricNA"
+import PriceChart from "./PriceChart"
 import type { MetricPoint, SnapshotFinancials } from "@/lib/financials"
 
 // ── Format helpers ────────────────────────────────────────────────────────────
@@ -295,7 +296,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
 
       {/* Company header */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-        <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
 
           {/* Logo + name */}
           <div className="flex items-center gap-3">
@@ -325,10 +326,10 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
           </div>
 
           {/* Stats */}
-          <div className="flex gap-3 flex-wrap justify-end items-start">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:justify-end items-start">
             {financials.currentPrice != null && (
               <div className="text-right">
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Price</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">Price</p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   ${financials.currentPrice.toFixed(2)}
                 </p>
@@ -356,7 +357,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
             )}
             {financials.marketCap != null && (
               <div className="text-right">
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Market Cap</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">Market Cap</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {fmtMarketCap(financials.marketCap)}
                 </p>
@@ -414,7 +415,14 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       </div>
 
-      {/* AI analysis blocks */}
+      {/* 2. Price chart */}
+      <PriceChart
+        history1Y={financials.priceHistory1Y}
+        history5Y={financials.priceHistory5Y}
+        ticker={financials.ticker}
+      />
+
+      {/* 3. Business overview + strengths + weaknesses */}
       {analysisLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {["Business Overview", "Strengths", "Weaknesses"].map((title) => (
@@ -422,7 +430,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
               key={title}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5 animate-pulse"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">
                 {title}
               </p>
               <div className="space-y-2">
@@ -436,19 +444,16 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       ) : analysis ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Business Overview */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
               Business Overview
             </h3>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
               {analysis.businessOverview}
             </p>
           </div>
-
-          {/* Strengths */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-500 mb-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-green-600 dark:text-green-500 mb-3">
               Strengths
             </h3>
             <ul className="space-y-3">
@@ -460,10 +465,8 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
               ))}
             </ul>
           </div>
-
-          {/* Weaknesses */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-500 mb-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-red-600 dark:text-red-500 mb-3">
               Weaknesses
             </h3>
             <ul className="space-y-3">
@@ -478,78 +481,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       ) : null}
 
-      {/* Analyst consensus */}
-      {financials.analystConsensus && (() => {
-        const ac = financials.analystConsensus!
-        const total = ac.buy + ac.hold + ac.sell
-        const buyPct  = total > 0 ? (ac.buy  / total) * 100 : 0
-        const holdPct = total > 0 ? (ac.hold / total) * 100 : 0
-        const sellPct = total > 0 ? (ac.sell / total) * 100 : 0
-        const upsidePositive = ac.upside != null && ac.upside >= 0
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
-                  Analyst Consensus{ac.numberOfAnalysts != null && <span className="ml-1 font-normal normal-case">({ac.numberOfAnalysts} analysts)</span>}
-                </h3>
-                {/* Bar */}
-                <div className="flex rounded-full overflow-hidden h-3 w-full mb-2">
-                  {buyPct > 0  && <div className="bg-emerald-500" style={{ width: `${buyPct}%` }} />}
-                  {holdPct > 0 && <div className="bg-amber-400"  style={{ width: `${holdPct}%` }} />}
-                  {sellPct > 0 && <div className="bg-rose-500"   style={{ width: `${sellPct}%` }} />}
-                </div>
-                <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-300">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />Buy <strong>{ac.buy}</strong></span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Hold <strong>{ac.hold}</strong></span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />Sell <strong>{ac.sell}</strong></span>
-                </div>
-              </div>
-              {ac.targetPrice != null && (
-                <div className="text-left sm:text-right">
-                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Price Target</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${ac.targetPrice.toFixed(2)}</p>
-                  {ac.upside != null && (
-                    <span className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-lg ${
-                      upsidePositive
-                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                        : "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
-                    }`}>
-                      {upsidePositive ? "+" : ""}{ac.upside.toFixed(1)}% upside
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* Trend flags */}
-      {flags.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
-            Trend Flags
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {flags.map((flag, i) => (
-              <div
-                key={i}
-                className={`flex items-start gap-2 text-sm px-3 py-2 rounded-xl border ${
-                  flag.severity === "warn"
-                    ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300"
-                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300"
-                }`}
-              >
-                <span className="shrink-0 mt-0.5">{flag.severity === "warn" ? "⚠" : "ⓘ"}</span>
-                <span>{flag.message}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Metrics grid */}
+      {/* 4. Metrics grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {METRICS.map(({ key, title, format, color, lowerIsBetter, showTrend, yoyMode, description }) => {
           const sector = financials.sector ?? ""
@@ -597,10 +529,80 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         })}
       </div>
 
-      {/* News */}
+      {/* 5. Trend flags */}
+      {flags.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
+            Trend Flags
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {flags.map((flag, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-2 text-sm px-3 py-2 rounded-xl border ${
+                  flag.severity === "warn"
+                    ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300"
+                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300"
+                }`}
+              >
+                <span className="shrink-0 mt-0.5">{flag.severity === "warn" ? "⚠" : "ⓘ"}</span>
+                <span>{flag.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Analyst consensus */}
+      {financials.analystConsensus && (() => {
+        const ac = financials.analystConsensus!
+        const total = ac.buy + ac.hold + ac.sell
+        const buyPct  = total > 0 ? (ac.buy  / total) * 100 : 0
+        const holdPct = total > 0 ? (ac.hold / total) * 100 : 0
+        const sellPct = total > 0 ? (ac.sell / total) * 100 : 0
+        const upsidePositive = ac.upside != null && ac.upside >= 0
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
+                  Analyst Consensus{ac.numberOfAnalysts != null && <span className="ml-1 font-normal normal-case">({ac.numberOfAnalysts} analysts)</span>}
+                </h3>
+                <div className="flex rounded-full overflow-hidden h-3 w-full mb-2">
+                  {buyPct > 0  && <div className="bg-emerald-500" style={{ width: `${buyPct}%` }} />}
+                  {holdPct > 0 && <div className="bg-amber-400"  style={{ width: `${holdPct}%` }} />}
+                  {sellPct > 0 && <div className="bg-rose-500"   style={{ width: `${sellPct}%` }} />}
+                </div>
+                <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-300">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />Buy <strong>{ac.buy}</strong></span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Hold <strong>{ac.hold}</strong></span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />Sell <strong>{ac.sell}</strong></span>
+                </div>
+              </div>
+              {ac.targetPrice != null && (
+                <div className="text-left sm:text-right">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Price Target</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${ac.targetPrice.toFixed(2)}</p>
+                  {ac.upside != null && (
+                    <span className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-lg ${
+                      upsidePositive
+                        ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                        : "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
+                    }`}>
+                      {upsidePositive ? "+" : ""}{ac.upside.toFixed(1)}% upside
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* 7. News */}
       {analysis?.news && analysis.news.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
             Recent News
           </h3>
           <ul className="space-y-3">
