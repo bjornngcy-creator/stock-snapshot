@@ -60,6 +60,40 @@ export async function getCachedAnalysis(ticker: string): Promise<{ data: CachedA
   }
 }
 
+export async function captureEmail(email: string, name: string = ""): Promise<void> {
+  const sheets = google.sheets({ version: "v4", auth: getAuth() })
+  const tab = await getFirstSheetName()
+
+  // Write to a dedicated "Leads" tab — create it if it doesn't exist
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID })
+  const leadsTab = meta.data.sheets?.find(s => s.properties?.title === "Leads")
+
+  if (!leadsTab) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: "Leads" } } }],
+      },
+    })
+    // Add header row
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: "Leads!A1:B1",
+      valueInputOption: "RAW",
+      requestBody: { values: [["name", "email", "date"]] },
+    })
+  }
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID,
+    range: "Leads!A:C",
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[name, email, new Date().toISOString().split("T")[0]]],
+    },
+  })
+}
+
 export async function setCachedAnalysis(
   ticker: string,
   companyName: string,

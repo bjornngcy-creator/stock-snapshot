@@ -294,7 +294,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
     <div className="space-y-5">
 
       {/* Company header */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
         <div className="flex items-start justify-between flex-wrap gap-4">
 
           {/* Logo + name */}
@@ -309,7 +309,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
             )}
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {financials.companyName}
                 </h2>
                 <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-mono px-2 py-0.5 rounded-lg">
@@ -329,7 +329,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
             {financials.currentPrice != null && (
               <div className="text-right">
                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Price</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   ${financials.currentPrice.toFixed(2)}
                 </p>
                 {financials.fiftyTwoWeekHigh != null && financials.fiftyTwoWeekLow != null && (
@@ -339,7 +339,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
                       <span className="text-gray-300 dark:text-gray-600 mx-1">52w</span>
                       <span>${financials.fiftyTwoWeekHigh.toFixed(2)}</span>
                     </div>
-                    <div className="w-28 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full"
                         style={{
@@ -370,7 +370,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
 
             {/* P/E trailing — bordered card */}
             {financials.peRatio != null && (
-              <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right min-w-[100px]">
+              <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">P/E (Trailing)</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{financials.peRatio.toFixed(1)}x</p>
                 {financials.peRatio5yrAvg != null && (
@@ -391,7 +391,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
 
             {/* Forward P/E — bordered card */}
             {financials.forwardPE != null && (
-              <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right min-w-[100px]">
+              <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Forward P/E</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{financials.forwardPE.toFixed(1)}x</p>
                 {financials.forwardPE5yrAvg != null && (
@@ -420,7 +420,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
           {["Business Overview", "Strengths", "Weaknesses"].map((title) => (
             <div
               key={title}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 animate-pulse"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5 animate-pulse"
             >
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
                 {title}
@@ -437,7 +437,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
       ) : analysis ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Business Overview */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
               Business Overview
             </h3>
@@ -447,7 +447,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
           </div>
 
           {/* Strengths */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-500 mb-3">
               Strengths
             </h3>
@@ -462,7 +462,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
           </div>
 
           {/* Weaknesses */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-500 mb-3">
               Weaknesses
             </h3>
@@ -487,14 +487,14 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         const sellPct = total > 0 ? (ac.sell / total) * 100 : 0
         const upsidePositive = ac.upside != null && ac.upside >= 0
         return (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
                   Analyst Consensus{ac.numberOfAnalysts != null && <span className="ml-1 font-normal normal-case">({ac.numberOfAnalysts} analysts)</span>}
                 </h3>
                 {/* Bar */}
-                <div className="flex rounded-full overflow-hidden h-3 w-64 mb-2">
+                <div className="flex rounded-full overflow-hidden h-3 w-full mb-2">
                   {buyPct > 0  && <div className="bg-emerald-500" style={{ width: `${buyPct}%` }} />}
                   {holdPct > 0 && <div className="bg-amber-400"  style={{ width: `${holdPct}%` }} />}
                   {sellPct > 0 && <div className="bg-rose-500"   style={{ width: `${sellPct}%` }} />}
@@ -506,7 +506,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
                 </div>
               </div>
               {ac.targetPrice != null && (
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Price Target</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${ac.targetPrice.toFixed(2)}</p>
                   {ac.upside != null && (
@@ -527,7 +527,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
 
       {/* Trend flags */}
       {flags.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
             Trend Flags
           </h3>
@@ -599,7 +599,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
 
       {/* News */}
       {analysis?.news && analysis.news.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
             Recent News
           </h3>

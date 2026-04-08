@@ -10,6 +10,8 @@ import HistoryDrawer, {
 } from "@/components/HistoryDrawer"
 import type { SnapshotFinancials } from "@/lib/financials"
 
+const TOOL_URL = "https://stock-snapshot.vercel.app"
+
 interface AnalysisData {
   businessOverview: string
   strengths: string[]
@@ -17,7 +19,16 @@ interface AnalysisData {
   news?: { title: string; publisher: string; url: string }[]
 }
 
+type Gate = "loading" | "gate" | "success" | "tool"
+
 export default function Home() {
+  const [gate, setGate] = useState<Gate>("loading")
+  const [nameInput, setNameInput] = useState("")
+  const [emailInput, setEmailInput] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [emailSubmitting, setEmailSubmitting] = useState(false)
+  const [copied, setCopied] = useState(false)
+
   const [ticker, setTicker] = useState("")
   const [loading, setLoading] = useState<"idle" | "financials" | "analysis" | "done">("idle")
   const [financials, setFinancials] = useState<SnapshotFinancials | null>(null)
@@ -28,6 +39,8 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
+    const hasAccess = localStorage.getItem("stock-snapshot-access")
+    setGate(hasAccess ? "tool" : "gate")
     setHistory(loadHistory())
     const saved = localStorage.getItem("theme")
     const dark = saved === "dark"
@@ -46,6 +59,48 @@ export default function Home() {
     setHistory(loadHistory())
   }
 
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const email = emailInput.trim().toLowerCase()
+    const name = nameInput.trim()
+    if (!name) { setEmailError("Please enter your name."); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Please enter a valid email address.")
+      return
+    }
+    setEmailError("")
+    setEmailSubmitting(true)
+    try {
+      await fetch("/api/capture-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      })
+    } catch { /* silently continue — don't block access on Sheets failure */ }
+    localStorage.setItem("stock-snapshot-access", "1")
+    setEmailSubmitting(false)
+    setGate("success")
+  }
+
+  function handleCopyLink() {
+    try {
+      navigator.clipboard.writeText(TOOL_URL)
+      setCopied(true)
+    } catch {
+      // Fallback for non-HTTPS or older browsers
+      const el = document.createElement("textarea")
+      el.value = TOOL_URL
+      el.style.position = "fixed"
+      el.style.opacity = "0"
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+      setCopied(true)
+    }
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const isLoading = loading === "financials" || loading === "analysis"
 
   async function handleAnalyze() {
@@ -53,9 +108,7 @@ export default function Home() {
     setError("")
     setFinancials(null)
     setAnalysis(null)
-
     const t = ticker.trim().toUpperCase()
-
     try {
       setLoading("financials")
       const finRes = await fetch(`/api/financials?ticker=${t}`)
@@ -83,7 +136,6 @@ export default function Home() {
       }
       saveToHistory(entry)
       refreshHistory()
-
       setLoading("done")
     } catch (err: any) {
       setError(err.message)
@@ -99,17 +151,187 @@ export default function Home() {
     setError("")
   }
 
+  // ── Gate screen ────────────────────────────────────────────────────────────
+  if (gate === "loading") return null
+
+  if (gate === "gate") {
+    return (
+      <main className="relative min-h-screen bg-[#06080f] flex items-center justify-center px-4 overflow-hidden">
+
+        {/* Animated gradient orbs — large and vivid */}
+        <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full blob"
+          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full blob blob-delay-2"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full blob blob-delay-4"
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)", filter: "blur(50px)" }} />
+
+        <div className="relative w-full max-w-md fade-in-up">
+          {/* Glass card with visible glow border */}
+          <div className="rounded-3xl p-8 text-center"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(40px)",
+              WebkitBackdropFilter: "blur(40px)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
+            }}>
+
+            <a href="https://linktr.ee/investwithbjorn" target="_blank" rel="noopener noreferrer">
+              <img
+                src="/bjorn-banner.png"
+                alt="Invest with Bjorn"
+                className="h-12 w-auto mx-auto rounded-xl object-contain mb-7 opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </a>
+
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold mb-3 leading-tight"
+                style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                Stock Health Checker
+              </h1>
+              <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Instant financial health checks on any stock — revenue trends, margins, analyst consensus, and AI-powered insights.
+              </p>
+            </div>
+
+            <form onSubmit={handleEmailSubmit} className="space-y-3 text-left">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your first name"
+                className="w-full rounded-xl px-4 py-3 text-sm text-white transition-all outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+                onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
+              />
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="Your email address"
+                className="w-full rounded-xl px-4 py-3 text-sm text-white transition-all outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+                onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
+              />
+              {emailError && (
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+                  style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                  <span className="text-red-400 shrink-0 text-xs">✕</span>
+                  <p className="text-red-400 text-sm">{emailError}</p>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={emailSubmitting}
+                className="shimmer-btn w-full text-white font-semibold py-3 rounded-xl text-sm transition-all disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
+              >
+                {emailSubmitting ? "Getting access..." : "Get Free Access →"}
+              </button>
+            </form>
+
+            <p className="text-xs mt-5" style={{ color: "rgba(255,255,255,0.2)" }}>
+              Free forever · No spam · Unsubscribe anytime
+            </p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // ── Success screen ─────────────────────────────────────────────────────────
+  if (gate === "success") {
+    return (
+      <main className="relative min-h-screen bg-[#06080f] flex items-center justify-center px-4 overflow-hidden">
+
+        <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full blob"
+          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full blob blob-delay-2"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full blob blob-delay-4"
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)", filter: "blur(50px)" }} />
+
+        <div className="relative w-full max-w-md fade-in-up">
+          <div className="rounded-3xl p-8 text-center"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(40px)",
+              WebkitBackdropFilter: "blur(40px)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
+            }}>
+
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+              style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)" }}>
+              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h2 className="text-3xl font-bold mb-2"
+              style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              You're in!
+            </h2>
+            <p className="text-sm mb-7 leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Save your access link — bookmark it so you can come back anytime, even if your browser clears.
+            </p>
+
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3 mb-2"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <span className="text-sm flex-1 text-left truncate font-mono" style={{ color: "rgba(255,255,255,0.65)" }}>
+                {TOOL_URL}
+              </span>
+              <button
+                onClick={handleCopyLink}
+                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: "rgba(59,130,246,0.2)", border: "1px solid rgba(96,165,250,0.3)", color: "#93c5fd" }}
+              >
+                {copied ? "Copied ✓" : "Copy"}
+              </button>
+            </div>
+            <p className="text-xs mb-7" style={{ color: "rgba(255,255,255,0.2)" }}>Bookmark this or save it somewhere safe</p>
+
+            <button
+              onClick={() => setGate("tool")}
+              className="shimmer-btn w-full text-white font-semibold py-3 rounded-xl text-sm transition-all"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
+            >
+              Start Analysing →
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // ── Tool ───────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10 px-6 transition-colors">
-      <div className="max-w-6xl mx-auto">
+    <main className="relative min-h-screen bg-[#06080f] py-10 px-3 sm:px-6 overflow-x-hidden">
+
+      {/* Background orbs — subtle, always present */}
+      <div className="pointer-events-none fixed top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full blob"
+        style={{ background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
+      <div className="pointer-events-none fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blob blob-delay-2"
+        style={{ background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
+      <div className="pointer-events-none fixed top-[40%] right-[20%] w-[400px] h-[400px] rounded-full blob blob-delay-4"
+        style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 65%)", filter: "blur(70px)" }} />
+
+      <div className="relative max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="relative text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Stock Health Checker</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Is this stock worth a closer look?</p>
+        <div className="relative text-center mb-8 fade-in-up">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1"
+            style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            Stock Health Checker
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
           <button
             onClick={toggleTheme}
-            className="absolute right-0 top-0 w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+            className="absolute right-0 top-0 w-9 h-9 flex items-center justify-center rounded-xl transition-colors"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             {isDark ? (
@@ -125,19 +347,23 @@ export default function Home() {
         </div>
 
         {/* Search row */}
-        <div className="flex gap-3 mb-8 justify-center items-center">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 items-center sm:justify-center fade-in-up">
           <input
             type="text"
             value={ticker}
             onChange={(e) => setTicker(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
             placeholder="Enter ticker (e.g. AAPL)"
-            className="border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm w-64 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500"
+            className="rounded-xl px-4 py-3 text-sm w-full sm:w-64 text-white placeholder-gray-500 outline-none transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+            onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+            onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
           />
           <button
             onClick={handleAnalyze}
             disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white font-medium px-6 py-3 rounded-xl text-sm transition-colors"
+            className="shimmer-btn text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all disabled:opacity-50 w-full sm:w-auto"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
           >
             {loading === "financials"
               ? "Fetching data..."
@@ -147,14 +373,16 @@ export default function Home() {
           </button>
           <button
             onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-4 py-3 rounded-xl text-sm transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2 font-medium px-4 py-3 rounded-xl text-sm transition-all w-full sm:w-auto"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             History
             {history.length > 0 && (
-              <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold px-1.5 py-0.5 rounded-full">
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: "rgba(59,130,246,0.25)", color: "#93c5fd" }}>
                 {history.length}
               </span>
             )}
@@ -163,7 +391,8 @@ export default function Home() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl p-4 mb-6 text-sm text-center">
+          <div className="rounded-xl p-4 mb-6 text-sm text-center"
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5" }}>
             {error}
           </div>
         )}
@@ -180,16 +409,12 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-12 flex flex-col items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
-        <a
-          href="https://linktr.ee/investwithbjorn"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+      <footer className="relative mt-12 flex flex-col items-center gap-3 text-sm" style={{ color: "rgba(255,255,255,0.25)" }}>
+        <a href="https://linktr.ee/investwithbjorn" target="_blank" rel="noopener noreferrer">
           <img
             src="/bjorn-banner.png"
             alt="Invest with Bjorn"
-            className="h-16 w-auto rounded-xl object-contain opacity-90 hover:opacity-100 transition-opacity"
+            className="h-16 w-auto rounded-xl object-contain opacity-60 hover:opacity-90 transition-opacity"
           />
         </a>
         <span>
@@ -198,7 +423,8 @@ export default function Home() {
             href="https://linktr.ee/investwithbjorn"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            className="font-bold transition-colors hover:opacity-80"
+            style={{ color: "rgba(255,255,255,0.5)" }}
           >
             Invest with Bjorn
           </a>

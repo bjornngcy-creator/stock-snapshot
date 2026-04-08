@@ -62,7 +62,7 @@ export default function MetricChart({ title, data, format, color, lowerIsBetter,
   const isUp = changePct != null && changePct >= 0
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-2 sm:p-4">
       <div className="flex items-start justify-between mb-1">
         <div className="flex items-center gap-1 min-w-0">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight">
@@ -94,7 +94,7 @@ export default function MetricChart({ title, data, format, color, lowerIsBetter,
         )}
       </div>
 
-      <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-0.5">
+      <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-0.5">
         {current != null ? format(current) : "—"}
       </p>
 
@@ -105,7 +105,7 @@ export default function MetricChart({ title, data, format, color, lowerIsBetter,
       {!note && <div className="mb-2" />}
 
       {chartData.length > 1 ? (
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={88}>
           <BarChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
             <XAxis
               dataKey="label"
@@ -119,7 +119,7 @@ export default function MetricChart({ title, data, format, color, lowerIsBetter,
               tickLine={false}
               tickCount={3}
               tickFormatter={(v: number) => format(v)}
-              width={44}
+              width={36}
               domain={yDomain}
             />
             <Tooltip
