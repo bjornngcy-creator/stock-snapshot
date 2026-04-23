@@ -1,48 +1,9 @@
 import YahooFinance from "yahoo-finance2"
 
 const yf = new YahooFinance({
-  suppressNotices: ["yahooSurvey"],
+  suppressNotices: ["yahooSurvey", "ripHistorical"],
   validation: { logErrors: false },
 })
-
-// ── StockAnalysis scraping helpers ─────────────────────────────────────────
-
-function extractNumArray(html: string, field: string): (number | null)[] {
-  const re = new RegExp(`(?:^|[,{])${field}:\\[([^\\]]+)\\]`)
-  const m = html.match(re)
-  if (!m) return []
-  try {
-    const fixed = m[1].replace(/(^|[,\[])(-?)\.(\d)/g, "$1$20.$3")
-    return JSON.parse(`[${fixed}]`).map((v: any) =>
-      v === null || v === undefined ? null : Number(v)
-    )
-  } catch {
-    return []
-  }
-}
-
-function extractStrArray(html: string, field: string): string[] {
-  const re = new RegExp(`(?:^|[,{])${field}:\\[([^\\]]+)\\]`)
-  const m = html.match(re)
-  if (!m) return []
-  try {
-    return JSON.parse(`[${m[1]}]`)
-  } catch {
-    return []
-  }
-}
-
-async function fetchPage(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "text/html",
-    },
-  })
-  if (!res.ok) throw new Error(`StockAnalysis fetch failed: ${res.status} for ${url}`)
-  return res.text()
-}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,8 +26,20 @@ export interface PricePoint {
   price: number
 }
 
+export interface EtfHolding {
+  symbol: string
+  name: string
+  weight: number
+}
+
+export interface EtfSectorWeight {
+  sector: string
+  weight: number
+}
+
 export interface SnapshotFinancials {
   ticker: string
+  isETF: boolean
   companyName: string
   sector: string | null
   industry: string | null
@@ -82,6 +55,16 @@ export interface SnapshotFinancials {
   forwardPE5yrAvg: number | null
   priceHistory1Y: PricePoint[]
   priceHistory5Y: PricePoint[]
+  // ETF-specific (null/[] for stocks)
+  aum: number | null
+  expenseRatio: number | null
+  etfCategory: string | null
+  dividendYield: number | null
+  ytdReturn: number | null
+  threeYearReturn: number | null
+  fiveYearReturn: number | null
+  topHoldings: EtfHolding[]
+  sectorWeights: EtfSectorWeight[]
   metrics: {
     revenue: MetricPoint[]
     grossMargin: MetricPoint[]
@@ -92,50 +75,169 @@ export interface SnapshotFinancials {
     debtEquity: MetricPoint[]
     roe: MetricPoint[]
     roa: MetricPoint[]
-    // Financial Services replacements
     netInterestIncome: MetricPoint[]
     efficiencyRatio: MetricPoint[]
     priceToBook: MetricPoint[]
   }
 }
 
+// ── Shared helpers ─────────────────────────────────────────────────────────
+
+function buildPriceSeries(rows: any[]): PricePoint[] {
+  return rows
+    .filter((r) => r.adjClose != null || r.close != null)
+    .map((r) => ({
+      date: new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      price: Math.round((r.adjClose ?? r.close) * 100) / 100,
+    }))
+}
+
+// Build a MetricPoint series from fundamentalsTimeSeries annual data (oldest-first)
+function ftsSeries(stmts: any[], getValue: (s: any) => number | null | undefined, n = 5): MetricPoint[] {
+  return stmts
+    .slice(-n)
+    .map((s: any) => {
+      const val = getValue(s)
+      if (val == null || !isFinite(val as number)) return null
+      const year = new Date(s.date).getFullYear()
+      return { label: `FY${year}`, value: val as number }
+    })
+    .filter((x): x is MetricPoint => x !== null)
+}
+
+function derivedRatio(numerator: MetricPoint[], denominator: MetricPoint[], scalePct = true): MetricPoint[] {
+  return numerator
+    .map((n) => {
+      const d = denominator.find((d) => d.label === n.label)
+      if (!d || d.value === 0) return null
+      const raw = n.value / d.value
+      const val = scalePct ? Math.round(raw * 1000) / 10 : Math.round(raw * 100) / 100
+      return { label: n.label, value: val }
+    })
+    .filter(Boolean) as MetricPoint[]
+}
+
+const EMPTY_METRICS = {
+  revenue: [], grossMargin: [], fcf: [], netIncome: [], eps: [],
+  opMargin: [], debtEquity: [], roe: [], roa: [],
+  netInterestIncome: [], efficiencyRatio: [], priceToBook: [],
+}
+
 // ── Main function ──────────────────────────────────────────────────────────
 
 export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFinancials> {
-  // StockAnalysis uses dot notation for class-B shares (BRK-B → brk.b)
-  const t = ticker.toLowerCase().replace(/-([a-z])$/, ".$1")
-
   const now = new Date()
   const date1Y = new Date(now); date1Y.setFullYear(now.getFullYear() - 1)
   const date5Y = new Date(now); date5Y.setFullYear(now.getFullYear() - 5)
 
-  const [incHtml, bsHtml, valHtml, summary, quote, hist1Y, hist5Y] = await Promise.all([
-    fetchPage(`https://stockanalysis.com/stocks/${t}/financials/?p=annual`),
-    fetchPage(`https://stockanalysis.com/stocks/${t}/financials/balance-sheet/?p=annual`),
-    fetchPage(`https://stockanalysis.com/stocks/${t}/financials/ratios/?p=annual`).catch(() =>
-      fetchPage(`https://stockanalysis.com/stocks/${t}/financials/valuation/`).catch(() => "")
-    ),
+  // Detect ETF vs stock
+  const earlyQuote = await yf.quote(ticker)
+  const isETF = (earlyQuote as any).quoteType === "ETF"
+
+  // ── ETF path ───────────────────────────────────────────────────────────────
+  if (isETF) {
+    const [etfSummary, hist1Y, hist5Y] = await Promise.all([
+      yf.quoteSummary(ticker, {
+        modules: ["summaryDetail", "defaultKeyStatistics", "fundProfile", "topHoldings"] as any,
+      }),
+      yf.historical(ticker, { period1: date1Y, period2: now, interval: "1d" }).catch(() => []),
+      yf.historical(ticker, { period1: date5Y, period2: now, interval: "1wk" }).catch(() => []),
+    ])
+
+    const companyName = (earlyQuote as any).longName ?? (earlyQuote as any).shortName ?? ticker
+    const currentPrice = (earlyQuote as any).regularMarketPrice ?? null
+    const fiftyTwoWeekHigh = (earlyQuote as any).fiftyTwoWeekHigh ?? null
+    const fiftyTwoWeekLow = (earlyQuote as any).fiftyTwoWeekLow ?? null
+
+    const sd = (etfSummary as any).summaryDetail ?? {}
+    const dks = (etfSummary as any).defaultKeyStatistics ?? {}
+    const fp = (etfSummary as any).fundProfile ?? {}
+    const th = (etfSummary as any).topHoldings ?? {}
+
+    const aum = sd.totalAssets ?? dks.totalAssets ?? null
+    const expenseRatio = dks.annualReportExpenseRatio ?? null
+    const etfCategory = fp.categoryName ?? null
+    const dividendYield = sd.yield ?? sd.trailingAnnualDividendYield ?? null
+    const ytdReturn = dks.ytdReturn ?? null
+    const threeYearReturn = dks.threeYearAverageReturn ?? null
+    const fiveYearReturn = dks.fiveYearAverageReturn ?? null
+
+    const topHoldings: EtfHolding[] = (th.holdings ?? []).slice(0, 10).map((h: any) => ({
+      symbol: h.symbol ?? "",
+      name: h.holdingName ?? h.symbol ?? "",
+      weight: Math.round((h.holdingPercent ?? 0) * 1000) / 10,
+    }))
+
+    const sectorWeights: EtfSectorWeight[] = (th.sectorWeightings ?? [])
+      .flatMap((s: any) =>
+        Object.entries(s).map(([sector, weight]) => ({
+          sector,
+          weight: Math.round((weight as number) * 1000) / 10,
+        }))
+      )
+      .filter((s: any) => s.weight > 0)
+      .sort((a: any, b: any) => b.weight - a.weight)
+
+    return {
+      ticker,
+      isETF: true,
+      companyName,
+      sector: etfCategory,
+      industry: null,
+      currentPrice,
+      marketCap: aum,
+      fiftyTwoWeekHigh,
+      fiftyTwoWeekLow,
+      earningsDate: null,
+      analystConsensus: null,
+      peRatio: null,
+      peRatio5yrAvg: null,
+      forwardPE: null,
+      forwardPE5yrAvg: null,
+      priceHistory1Y: buildPriceSeries(hist1Y as any[]),
+      priceHistory5Y: buildPriceSeries(hist5Y as any[]),
+      aum,
+      expenseRatio,
+      etfCategory,
+      dividendYield,
+      ytdReturn,
+      threeYearReturn,
+      fiveYearReturn,
+      topHoldings,
+      sectorWeights,
+      metrics: EMPTY_METRICS,
+    }
+  }
+
+  // ── Stock path — all Yahoo Finance ────────────────────────────────────────
+  const quote = earlyQuote
+  const date6Y = new Date(now); date6Y.setFullYear(now.getFullYear() - 6)
+  const [summary, hist1Y, hist5Y, finData, cfData, bsData] = await Promise.all([
     yf.quoteSummary(ticker, {
-      modules: ["financialData", "summaryDetail", "summaryProfile", "defaultKeyStatistics", "recommendationTrend", "calendarEvents"] as const,
+      modules: [
+        "financialData", "summaryDetail", "summaryProfile", "defaultKeyStatistics",
+        "recommendationTrend", "calendarEvents",
+      ] as any,
     }),
-    yf.quote(ticker),
     yf.historical(ticker, { period1: date1Y, period2: now, interval: "1d" }).catch(() => []),
     yf.historical(ticker, { period1: date5Y, period2: now, interval: "1wk" }).catch(() => []),
+    (yf as any).fundamentalsTimeSeries(ticker, { period1: date6Y, period2: now, module: "financials", type: "annual" }).catch(() => []),
+    (yf as any).fundamentalsTimeSeries(ticker, { period1: date6Y, period2: now, module: "cash-flow", type: "annual" }).catch(() => []),
+    (yf as any).fundamentalsTimeSeries(ticker, { period1: date6Y, period2: now, module: "balance-sheet", type: "annual" }).catch(() => []),
   ])
 
-  // ── Company info ──────────────────────────────────────────────────────
-  const companyName =
-    (quote as any).longName ?? (quote as any).shortName ?? ticker
+  // ── Company info ──────────────────────────────────────────────────────────
+  const companyName = (quote as any).longName ?? (quote as any).shortName ?? ticker
   const sector = (summary as any).summaryProfile?.sector ?? null
   const industry = (summary as any).summaryProfile?.industry ?? null
   const currentPrice = (quote as any).regularMarketPrice ?? null
-  const marketCap =
-    (quote as any).marketCap ?? (summary as any).summaryDetail?.marketCap ?? null
+  const marketCap = (quote as any).marketCap ?? (summary as any).summaryDetail?.marketCap ?? null
   const fiftyTwoWeekHigh = (quote as any).fiftyTwoWeekHigh ?? null
-  const fiftyTwoWeekLow  = (quote as any).fiftyTwoWeekLow  ?? null
+  const fiftyTwoWeekLow = (quote as any).fiftyTwoWeekLow ?? null
   const peRatio = (summary as any).summaryDetail?.trailingPE ?? null
+  const forwardPE = (summary as any).defaultKeyStatistics?.forwardPE ?? null
 
-  // ── Earnings date ─────────────────────────────────────────────────────
+  // ── Earnings date ─────────────────────────────────────────────────────────
   let earningsDate: string | null = null
   try {
     const earningsDates: Date[] = (summary as any).calendarEvents?.earnings?.earningsDate ?? []
@@ -147,13 +249,13 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     }
   } catch { /* leave null */ }
 
-  // ── Analyst consensus ────────────────────────────────────────────────
+  // ── Analyst consensus ─────────────────────────────────────────────────────
   let analystConsensus: AnalystConsensus | null = null
   try {
     const trend = (summary as any).recommendationTrend?.trend ?? []
     const current = trend.find((t: any) => t.period === "0m") ?? trend[0]
     if (current) {
-      const buy  = (current.strongBuy ?? 0) + (current.buy ?? 0)
+      const buy = (current.strongBuy ?? 0) + (current.buy ?? 0)
       const hold = current.hold ?? 0
       const sell = (current.sell ?? 0) + (current.strongSell ?? 0)
       const targetPrice = (summary as any).financialData?.targetMeanPrice ?? null
@@ -168,138 +270,29 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     }
   } catch { /* leave null */ }
 
-  // ── Parse income statement ────────────────────────────────────────────
-  const datekeys = extractStrArray(incHtml, "datekey")
-  const fiscalYears = extractStrArray(incHtml, "fiscalYear")
-  const hasTTM = datekeys[0] === "TTM"
+  // ── Financial statements (via fundamentalsTimeSeries annual) ─────────────
+  const revSeries    = ftsSeries(finData as any[], (s) => s.totalRevenue)
+  const gpSeries     = ftsSeries(finData as any[], (s) => s.grossProfit)
+  const niSeries     = ftsSeries(finData as any[], (s) => s.netIncome)
+  const oiSeries     = ftsSeries(finData as any[], (s) => s.operatingIncome ?? s.EBIT)
+  const epsSeries    = ftsSeries(finData as any[], (s) => s.dilutedEPS)
+  const equitySeries = ftsSeries(bsData as any[],  (s) => s.stockholdersEquity ?? s.commonStockEquity)
+  const assetsSeries = ftsSeries(bsData as any[],  (s) => s.totalAssets)
+  const debtSeries   = ftsSeries(bsData as any[],  (s) => s.totalDebt)
+  const fcfSeries    = ftsSeries(cfData as any[],  (s) => {
+    if (s.freeCashFlow != null) return s.freeCashFlow
+    const op = s.operatingCashFlow ?? s.cashFlowFromContinuingOperatingActivities
+    const cap = s.capitalExpenditure
+    if (op != null && cap != null) return op + cap
+    return null
+  })
 
-  const revVals    = extractNumArray(incHtml, "revenue")
-  const gpVals     = extractNumArray(incHtml, "grossProfit")
-  const fcfVals    = extractNumArray(incHtml, "fcf")
-  const epsVals    = extractNumArray(incHtml, "epsDiluted")
-  const niVals     = extractNumArray(incHtml, "netIncome")
-  const oiVals     = extractNumArray(incHtml, "operatingIncome")
-  // Financial Services specific
-  const netIntIncVals  = extractNumArray(incHtml, "netInterestIncomeBank")
-  const nonIntExpVals  = extractNumArray(incHtml, "income_statement_total_non_interest_expense")
+  // ── Derived metrics ───────────────────────────────────────────────────────
+  const grossMarginSeries  = derivedRatio(gpSeries, revSeries, true)
+  const opMarginSeries     = derivedRatio(oiSeries, revSeries, true)
+  const roeSeries          = derivedRatio(niSeries, equitySeries, true)
+  const roaSeries          = derivedRatio(niSeries, assetsSeries, true)
 
-  // ── Parse balance sheet ───────────────────────────────────────────────
-  const bsDatekeys = extractStrArray(bsHtml, "datekey")
-  const bsFiscalYears = extractStrArray(bsHtml, "fiscalYear")
-  const bsHasTTM = bsDatekeys[0] === "TTM"
-
-  // Try multiple field name variants for total equity
-  let equityVals = extractNumArray(bsHtml, "totalEquity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "equity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "shEquity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "shareholdersEquity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "commonEquity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "balance_sheet_total_equity")
-  if (equityVals.length === 0)
-    equityVals = extractNumArray(bsHtml, "balance_sheet_stockholders_equity")
-
-  // Try total debt directly first, then fall back to summing components
-  let directDebtVals = extractNumArray(bsHtml, "totalDebt")
-  if (directDebtVals.length === 0)
-    directDebtVals = extractNumArray(bsHtml, "balance_sheet_total_debt")
-  if (directDebtVals.length === 0)
-    directDebtVals = extractNumArray(bsHtml, "totalBorrowings")
-  if (directDebtVals.length === 0)
-    directDebtVals = extractNumArray(bsHtml, "debt")
-
-  const stDebtVals = extractNumArray(bsHtml, "shortTermDebt")
-  const cpLtVals =
-    extractNumArray(bsHtml, "currentLongTermDebt").length > 0
-      ? extractNumArray(bsHtml, "currentLongTermDebt")
-      : extractNumArray(bsHtml, "currentPortionOfLongTermDebt")
-  const ltDebtVals =
-    extractNumArray(bsHtml, "longTermDebt").length > 0
-      ? extractNumArray(bsHtml, "longTermDebt")
-      : extractNumArray(bsHtml, "totalLongTermDebt")
-  const leasesVals = extractNumArray(bsHtml, "longTermLeases")
-
-  // ── Build annual series helper ────────────────────────────────────────
-  // StockAnalysis: index 0 = TTM (if present), 1+ = annual newest-first
-  function buildSeries(
-    vals: (number | null)[],
-    dates: string[],
-    years: string[],
-    hasT: boolean,
-    n = 5
-  ): MetricPoint[] {
-    const annual: MetricPoint[] = []
-    const start = hasT ? 1 : 0
-    for (let i = start; i < dates.length; i++) {
-      if (vals[i] != null) annual.push({ label: `FY${years[i]}`, value: vals[i]! })
-    }
-    annual.reverse() // oldest → newest
-    const sliced = annual.slice(-n)
-    if (hasT && vals[0] != null) sliced.push({ label: "TTM", value: vals[0]! })
-    return sliced
-  }
-
-  // Build total debt series — prefer direct totalDebt field, fall back to components
-  function buildDebtSeries(
-    dates: string[],
-    years: string[],
-    hasT: boolean,
-    n = 5
-  ): MetricPoint[] {
-    const useDirectDebt = directDebtVals.length > 0
-    const hasComponents =
-      stDebtVals.length > 0 || cpLtVals.length > 0 || ltDebtVals.length > 0
-    if (!useDirectDebt && !hasComponents) return []
-
-    const annual: MetricPoint[] = []
-    const start = hasT ? 1 : 0
-    for (let i = start; i < dates.length; i++) {
-      const total = useDirectDebt
-        ? (directDebtVals[i] ?? 0)
-        : (stDebtVals[i] ?? 0) + (cpLtVals[i] ?? 0) + (ltDebtVals[i] ?? 0) + (leasesVals[i] ?? 0)
-      annual.push({ label: `FY${years[i]}`, value: total })
-    }
-    annual.reverse()
-    return annual.slice(-n)
-  }
-
-  const revSeries  = buildSeries(revVals, datekeys, fiscalYears, hasTTM)
-  const gpSeries   = buildSeries(gpVals,  datekeys, fiscalYears, hasTTM)
-  const fcfSeries  = buildSeries(fcfVals, datekeys, fiscalYears, hasTTM)
-  const epsSeries  = buildSeries(epsVals, datekeys, fiscalYears, hasTTM)
-  const niSeries   = buildSeries(niVals,  datekeys, fiscalYears, hasTTM)
-  const oiSeries   = buildSeries(oiVals,  datekeys, fiscalYears, hasTTM)
-  const equitySeries = buildSeries(equityVals, bsDatekeys, bsFiscalYears, bsHasTTM)
-  const debtSeries = buildDebtSeries(bsDatekeys, bsFiscalYears, bsHasTTM)
-
-  // ── Compute derived metrics by matching fiscal year labels ────────────
-  function derivedRatio(
-    numerator: MetricPoint[],
-    denominator: MetricPoint[],
-    scalePct = true
-  ): MetricPoint[] {
-    return numerator
-      .map((n) => {
-        const d = denominator.find((d) => d.label === n.label)
-        if (!d || d.value === 0) return null
-        const raw = n.value / d.value
-        const val = scalePct ? Math.round(raw * 1000) / 10 : Math.round(raw * 100) / 100
-        return { label: n.label, value: val }
-      })
-      .filter(Boolean) as MetricPoint[]
-  }
-
-  // Net margin = net income / revenue × 100
-  const netMarginSeries = derivedRatio(niSeries, revSeries, true)
-
-  // Operating margin = operating income / revenue × 100
-  const opMarginSeries = derivedRatio(oiSeries, revSeries, true)
-
-  // Debt/Equity = total debt / equity (ratio)
   const debtEquitySeries = equitySeries
     .map((eq) => {
       const debt = debtSeries.find((d) => d.label === eq.label)
@@ -308,60 +301,13 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     })
     .filter(Boolean) as MetricPoint[]
 
-  // ROE = net income / equity × 100
-  const roeSeries = derivedRatio(niSeries, equitySeries, true)
-
-  // Gross margin = gross profit / revenue × 100
-  const grossMarginSeries = derivedRatio(gpSeries, revSeries, true)
-
-  // Financial Services metrics
-  const netIntIncSeries    = buildSeries(netIntIncVals, datekeys, fiscalYears, hasTTM)
-  const nonIntExpSeries    = buildSeries(nonIntExpVals, datekeys, fiscalYears, hasTTM)
-  // Efficiency ratio = non-interest expense / revenue × 100 (lower = better)
-  const efficiencyRatioSeries = derivedRatio(nonIntExpSeries, revSeries, true)
-
-  // ── P/E 5-year averages from valuation page ───────────────────────────
-  const valDatekeys    = extractStrArray(valHtml, "datekey")
-  const valFiscalYears = extractStrArray(valHtml, "fiscalYear")
-  const valHasTTM      = valDatekeys[0] === "TTM"
-  const roaVals  = extractNumArray(valHtml, "roa")
-  const pbVals   = extractNumArray(valHtml, "pb")
-  const roaSeries = buildSeries(roaVals, valDatekeys, valFiscalYears, valHasTTM)
-  const pbSeries  = buildSeries(pbVals,  valDatekeys, valFiscalYears, valHasTTM)
-
-  let peHistVals = extractNumArray(valHtml, "pe")
-  if (peHistVals.length === 0) peHistVals = extractNumArray(valHtml, "peRatio")
-  if (peHistVals.length === 0) peHistVals = extractNumArray(valHtml, "trailingPe")
-
-  const fwdPeHistVals = extractNumArray(valHtml, "peForward")
-
-  function avg5yr(vals: (number | null)[], hasT: boolean): number | null {
-    const start = hasT ? 1 : 0
-    const annual = vals
-      .slice(start, start + 5)
-      .filter((v): v is number => v != null && v > 0)
-    if (annual.length === 0) return null
-    return Math.round((annual.reduce((a, b) => a + b, 0) / annual.length) * 10) / 10
-  }
-
-  const peRatio5yrAvg = avg5yr(peHistVals, valHasTTM)
-  const forwardPE = (summary as any).defaultKeyStatistics?.forwardPE ?? null
-  const forwardPE5yrAvg = avg5yr(fwdPeHistVals, valHasTTM)
-
-  function buildPriceSeries(rows: any[]): PricePoint[] {
-    return rows
-      .filter((r) => r.adjClose != null || r.close != null)
-      .map((r) => ({
-        date: new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        price: Math.round((r.adjClose ?? r.close) * 100) / 100,
-      }))
-  }
-
+  // ── Price history ─────────────────────────────────────────────────────────
   const priceHistory1Y = buildPriceSeries(hist1Y as any[])
   const priceHistory5Y = buildPriceSeries(hist5Y as any[])
 
   return {
     ticker,
+    isETF: false,
     companyName,
     sector,
     industry,
@@ -372,11 +318,20 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     earningsDate,
     analystConsensus,
     peRatio,
-    peRatio5yrAvg,
+    peRatio5yrAvg: null, // not available from Yahoo Finance
     forwardPE,
-    forwardPE5yrAvg,
+    forwardPE5yrAvg: null, // not available from Yahoo Finance
     priceHistory1Y,
     priceHistory5Y,
+    aum: null,
+    expenseRatio: null,
+    etfCategory: null,
+    dividendYield: null,
+    ytdReturn: null,
+    threeYearReturn: null,
+    fiveYearReturn: null,
+    topHoldings: [],
+    sectorWeights: [],
     metrics: {
       revenue: revSeries,
       grossMargin: grossMarginSeries,
@@ -387,9 +342,9 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
       debtEquity: debtEquitySeries,
       roe: roeSeries,
       roa: roaSeries,
-      netInterestIncome: netIntIncSeries,
-      efficiencyRatio: efficiencyRatioSeries,
-      priceToBook: pbSeries,
+      netInterestIncome: [],
+      efficiencyRatio: [],
+      priceToBook: [],
     },
   }
 }
