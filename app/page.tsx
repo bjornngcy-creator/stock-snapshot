@@ -37,6 +37,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [isDark, setIsDark] = useState(false)
+  const [showSearchTip, setShowSearchTip] = useState(false)
 
   useEffect(() => {
     const hasAccess = localStorage.getItem("stock-snapshot-access")
@@ -118,7 +119,7 @@ export default function Home() {
 
       setLoading("analysis")
       const analRes = await fetch(
-        `/api/analysis?ticker=${t}&name=${encodeURIComponent(fin.companyName)}`
+        `/api/analysis?ticker=${t}&name=${encodeURIComponent(fin.companyName)}&isETF=${fin.isETF}`
       )
       const anal: AnalysisData = await analRes.json()
       if ("error" in anal) throw new Error((anal as any).error)
@@ -418,18 +419,65 @@ export default function Home() {
         })()}
 
         {/* Search row */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8 items-center sm:justify-center fade-in-up">
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-            placeholder="Enter ticker (e.g. AAPL)"
-            className="rounded-xl px-4 py-3 text-sm w-full sm:w-64 text-white placeholder-gray-500 outline-none transition-all"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
-            onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
-            onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
-          />
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 items-center sm:justify-center fade-in-up relative z-10">
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+              placeholder="Enter ticker (e.g. AAPL)"
+              className="rounded-xl px-4 py-3 pr-10 text-sm w-full text-white placeholder-gray-500 outline-none transition-all"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+              onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+              onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
+            />
+            {/* Info icon */}
+            <button
+              type="button"
+              onMouseEnter={() => setShowSearchTip(true)}
+              onMouseLeave={() => setShowSearchTip(false)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full transition-colors"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+              title="How to search international stocks"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="8" strokeLinecap="round" strokeWidth={2.5}/>
+                <line x1="12" y1="12" x2="12" y2="16" strokeLinecap="round"/>
+              </svg>
+            </button>
+            {/* Tooltip */}
+            {showSearchTip && (
+              <div
+                className="absolute left-0 top-full mt-2 z-50 rounded-xl p-3.5 text-xs w-64"
+                style={{
+                  background: "rgb(15,20,35)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              >
+                <p className="font-semibold mb-2" style={{ color: "rgba(255,255,255,0.9)" }}>Searching international stocks</p>
+                <p className="mb-2" style={{ color: "rgba(255,255,255,0.45)" }}>Add the exchange suffix after the ticker:</p>
+                <div className="space-y-1">
+                  {[
+                    ["🇺🇸 US", "AAPL, MSFT"],
+                    ["🇰🇷 Korea (.KS)", "000660.KS"],
+                    ["🇯🇵 Japan (.T)", "7203.T"],
+                    ["🇭🇰 Hong Kong (.HK)", "0005.HK"],
+                    ["🇬🇧 London (.L)", "HSBA.L"],
+                    ["🇸🇬 Singapore (.SI)", "D05.SI"],
+                  ].map(([label, example]) => (
+                    <div key={label} className="flex justify-between items-center">
+                      <span style={{ color: "rgba(255,255,255,0.5)" }}>{label}</span>
+                      <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.07)", color: "#93c5fd" }}>{example}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button
             onClick={handleAnalyze}
             disabled={isLoading}
