@@ -357,7 +357,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
             )}
             {financials.marketCap != null && (
               <div className="text-right">
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">Market Cap</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">{financials.isETF ? "AUM" : "Market Cap"}</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {fmtMarketCap(financials.marketCap)}
                 </p>
@@ -415,43 +415,51 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       </div>
 
-      {/* 2. Price chart */}
+      {/* 2. Business overview — full width, above price chart */}
+      {analysisLoading ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5 animate-pulse">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">Business Overview</p>
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          </div>
+        </div>
+      ) : analysis ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
+            Business Overview
+          </h3>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+            {analysis.businessOverview}
+          </p>
+        </div>
+      ) : null}
+
+      {/* 3. Price chart */}
       <PriceChart
         history1Y={financials.priceHistory1Y}
         history5Y={financials.priceHistory5Y}
         ticker={financials.ticker}
       />
 
-      {/* 3. Business overview + strengths + weaknesses */}
+      {/* 4. Strengths + Weaknesses — two columns */}
       {analysisLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {["Business Overview", "Strengths", "Weaknesses"].map((title) => (
-            <div
-              key={title}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5 animate-pulse"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">
-                {title}
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {["Strengths", "Weaknesses"].map((title) => (
+            <div key={title} className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5 animate-pulse">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">{title}</p>
               <div className="space-y-2">
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
                 <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
               </div>
             </div>
           ))}
         </div>
       ) : analysis ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
-              Business Overview
-            </h3>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {analysis.businessOverview}
-            </p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
             <h3 className="text-[10px] font-semibold uppercase tracking-widest text-green-600 dark:text-green-500 mb-3">
               Strengths
@@ -481,8 +489,94 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       ) : null}
 
-      {/* 4. Metrics grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* 5. ETF-specific sections */}
+      {financials.isETF && (
+        <div className="space-y-4">
+          {/* ETF Key Stats */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">ETF Overview</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {financials.aum != null && (
+                <div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">AUM</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{fmtMarketCap(financials.aum)}</p>
+                </div>
+              )}
+              {financials.expenseRatio != null && (
+                <div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Expense Ratio</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{(financials.expenseRatio * 100).toFixed(2)}%</p>
+                </div>
+              )}
+              {financials.dividendYield != null && (
+                <div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Dividend Yield</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{fmtPct(financials.dividendYield)}</p>
+                </div>
+              )}
+              {financials.etfCategory && (
+                <div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Category</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{financials.etfCategory}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Annualized Performance */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Annualized Performance</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+              {([
+                { label: "YTD",    value: financials.ytdReturn },
+                { label: "1-Year", value: financials.oneYearReturn },
+                { label: "3-Year", value: financials.threeYearReturn },
+                { label: "5-Year", value: financials.fiveYearReturn },
+                { label: "10-Year",value: financials.tenYearReturn },
+              ] as { label: string; value: number | null }[]).map(({ label, value }) => (
+                <div key={label} className="text-center border border-gray-100 dark:border-gray-700 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{label}</p>
+                  {value != null ? (
+                    <p className={`text-xl font-bold ${value >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                      {value >= 0 ? "+" : ""}{value.toFixed(1)}%
+                    </p>
+                  ) : (
+                    <p className="text-xl font-bold text-gray-300 dark:text-gray-600">—</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top 10 Holdings */}
+          {financials.topHoldings.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+              <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Top 10 Holdings</h3>
+              <div className="space-y-2">
+                {financials.topHoldings.map((holding, i) => (
+                  <div key={holding.symbol} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 w-4 shrink-0 text-right">{i + 1}</span>
+                    <span className="font-mono text-xs font-semibold text-gray-700 dark:text-gray-200 w-12 shrink-0">{holding.symbol}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300 flex-1 truncate">{holding.name}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${Math.min(100, (holding.weight / (financials.topHoldings[0]?.weight || 1)) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 w-10 text-right">{holding.weight.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. Metrics grid (stocks only) */}
+      {!financials.isETF && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {METRICS.map(({ key, title, format, color, lowerIsBetter, showTrend, yoyMode, description }) => {
           const sector = financials.sector ?? ""
           const override = (SECTOR_OVERRIDES[sector] ?? {})[key]
@@ -527,10 +621,10 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
             />
           )
         })}
-      </div>
+      </div>}
 
-      {/* 5. Trend flags */}
-      {flags.length > 0 && (
+      {/* 5. Trend flags (stocks only) */}
+      {!financials.isETF && flags.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
           <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
             Trend Flags

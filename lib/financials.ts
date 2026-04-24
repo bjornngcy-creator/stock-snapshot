@@ -61,8 +61,10 @@ export interface SnapshotFinancials {
   etfCategory: string | null
   dividendYield: number | null
   ytdReturn: number | null
+  oneYearReturn: number | null
   threeYearReturn: number | null
   fiveYearReturn: number | null
+  tenYearReturn: number | null
   topHoldings: EtfHolding[]
   sectorWeights: EtfSectorWeight[]
   metrics: {
@@ -136,12 +138,14 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
 
   // ── ETF path ───────────────────────────────────────────────────────────────
   if (isETF) {
-    const [etfSummary, hist1Y, hist5Y] = await Promise.all([
+    const date10Y = new Date(now); date10Y.setFullYear(now.getFullYear() - 10)
+    const [etfSummary, hist1Y, hist5Y, hist10Y] = await Promise.all([
       yf.quoteSummary(ticker, {
         modules: ["summaryDetail", "defaultKeyStatistics", "fundProfile", "topHoldings"] as any,
       }),
       yf.historical(ticker, { period1: date1Y, period2: now, interval: "1d" }).catch(() => []),
       yf.historical(ticker, { period1: date5Y, period2: now, interval: "1wk" }).catch(() => []),
+      yf.historical(ticker, { period1: date10Y, period2: now, interval: "1wk" }).catch(() => []),
     ])
 
     const companyName = (earlyQuote as any).longName ?? (earlyQuote as any).shortName ?? ticker
@@ -157,10 +161,24 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     const aum = sd.totalAssets ?? dks.totalAssets ?? null
     const expenseRatio = dks.annualReportExpenseRatio ?? null
     const etfCategory = fp.categoryName ?? null
-    const dividendYield = sd.yield ?? sd.trailingAnnualDividendYield ?? null
-    const ytdReturn = dks.ytdReturn ?? null
-    const threeYearReturn = dks.threeYearAverageReturn ?? null
-    const fiveYearReturn = dks.fiveYearAverageReturn ?? null
+    const pct = (v: number | null | undefined) => v != null ? Math.round(v * 1000) / 10 : null
+    const dividendYield = pct(sd.yield ?? sd.trailingAnnualDividendYield)
+    const ytdReturn = pct(dks.ytdReturn)
+    const threeYearReturn = pct(dks.threeYearAverageReturn)
+    const fiveYearReturn = pct(dks.fiveYearAverageReturn)
+
+    // Compute 1-year and 10-year from adjClose history (total return, dividends included via price adjustment)
+    const cagrFromHistory = (rows: any[], years: number): number | null => {
+      const prices = buildPriceSeries(rows)
+      if (prices.length < 2) return null
+      const start = prices[0].price
+      const end = prices[prices.length - 1].price
+      if (start <= 0) return null
+      const cagr = (Math.pow(end / start, 1 / years) - 1) * 100
+      return Math.round(cagr * 10) / 10
+    }
+    const oneYearReturn = cagrFromHistory(hist1Y as any[], 1)
+    const tenYearReturn = cagrFromHistory(hist10Y as any[], 10)
 
     const topHoldings: EtfHolding[] = (th.holdings ?? []).slice(0, 10).map((h: any) => ({
       symbol: h.symbol ?? "",
@@ -201,8 +219,10 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
       etfCategory,
       dividendYield,
       ytdReturn,
+      oneYearReturn,
       threeYearReturn,
       fiveYearReturn,
+      tenYearReturn,
       topHoldings,
       sectorWeights,
       metrics: EMPTY_METRICS,
@@ -328,8 +348,10 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     etfCategory: null,
     dividendYield: null,
     ytdReturn: null,
+    oneYearReturn: null,
     threeYearReturn: null,
     fiveYearReturn: null,
+    tenYearReturn: null,
     topHoldings: [],
     sectorWeights: [],
     metrics: {
