@@ -321,6 +321,34 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
     })
     .filter(Boolean) as MetricPoint[]
 
+  // ── Bank-specific metrics ─────────────────────────────────────────────────
+  const niiSeries = ftsSeries(finData as any[], (s) => s.netInterestIncome)
+
+  const nonIntExpSeries = ftsSeries(finData as any[], (s) => s.nonInterestExpense)
+  const efficiencyRatioSeries = derivedRatio(nonIntExpSeries, revSeries, true)
+
+  // Price/Book: use year-end prices from hist5Y × book value per share
+  const sharesSeries = (bsData as any[]).filter((s) => s.ordinarySharesNumber != null)
+  const priceToBookSeries: MetricPoint[] = equitySeries.map((eq) => {
+    const year = parseInt(eq.label.replace("FY", ""))
+    const bsRow = sharesSeries.find((s) => new Date(s.date).getFullYear() === year)
+    if (!bsRow || bsRow.ordinarySharesNumber === 0) return null
+    const bvps = eq.value / bsRow.ordinarySharesNumber
+    if (bvps <= 0) return null
+    // Find price closest to Dec 31 of that year in hist5Y
+    const target = new Date(year, 11, 31).getTime()
+    const histArr = hist5Y as any[]
+    if (!histArr.length) return null
+    const closest = histArr.reduce((best: any, row: any) => {
+      const d = Math.abs(new Date(row.date).getTime() - target)
+      const bd = Math.abs(new Date(best.date).getTime() - target)
+      return d < bd ? row : best
+    })
+    const price = closest.adjClose ?? closest.close
+    if (!price) return null
+    return { label: eq.label, value: Math.round((price / bvps) * 100) / 100 }
+  }).filter(Boolean) as MetricPoint[]
+
   // ── Price history ─────────────────────────────────────────────────────────
   const priceHistory1Y = buildPriceSeries(hist1Y as any[])
   const priceHistory5Y = buildPriceSeries(hist5Y as any[])
@@ -364,9 +392,9 @@ export async function getSnapshotFinancials(ticker: string): Promise<SnapshotFin
       debtEquity: debtEquitySeries,
       roe: roeSeries,
       roa: roaSeries,
-      netInterestIncome: [],
-      efficiencyRatio: [],
-      priceToBook: [],
+      netInterestIncome: niiSeries,
+      efficiencyRatio: efficiencyRatioSeries,
+      priceToBook: priceToBookSeries,
     },
   }
 }

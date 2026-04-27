@@ -194,10 +194,10 @@ export default function Home() {
             <div className="mb-6">
               <h1 className="text-3xl font-bold mb-3 leading-tight font-serif-display"
                 style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                Stock Health Checker
+                Equity Lens
               </h1>
               <p className="text-sm leading-relaxed" style={{ color: "#8FA3BC" }}>
-                Instant financial health checks on any stock — revenue trends, margins, analyst consensus, and AI-powered insights.
+                A simple way to assess the health and quality of a business — revenue trends, margins, analyst consensus, and AI-powered insights.
               </p>
             </div>
 
@@ -393,9 +393,9 @@ export default function Home() {
                 <div className="text-left">
                   <h1 className="text-2xl font-bold mb-0.5 font-serif-display"
                     style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                    Stock Health Checker
+                    Equity Lens
                   </h1>
-                  <p className="text-sm" style={{ color: "#8FA3BC" }}>Is this stock worth a closer look?</p>
+                  <p className="text-sm" style={{ color: "#8FA3BC" }}>A simple way to assess the health and quality of a business.</p>
                 </div>
                 {themeBtn}
               </div>
@@ -404,9 +404,9 @@ export default function Home() {
               <div className="hidden sm:block relative text-center">
                 <h1 className="text-3xl font-bold mb-1 font-serif-display"
                   style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                  Stock Health Checker
+                  Equity Lens
                 </h1>
-                <p className="text-sm" style={{ color: "#8FA3BC" }}>Is this stock worth a closer look?</p>
+                <p className="text-sm" style={{ color: "#8FA3BC" }}>A simple way to assess the health and quality of a business.</p>
                 <div className="absolute left-0 top-0 flex flex-col items-start gap-1.5">
                   <img src="/bjorn-banner.png" alt="Invest with Bjorn" className="w-[120px] h-auto rounded-xl object-contain" />
                   {socialIcons}

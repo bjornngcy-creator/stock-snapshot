@@ -27,6 +27,7 @@ async function fetchYahooNews(ticker: string): Promise<{ title: string; publishe
 export async function GET(req: NextRequest) {
   const ticker = req.nextUrl.searchParams.get("ticker")?.toUpperCase()
   const companyName = req.nextUrl.searchParams.get("name") ?? ticker
+  const isETF = req.nextUrl.searchParams.get("isETF") === "true"
   if (!ticker) return NextResponse.json({ error: "No ticker provided" }, { status: 400 })
 
   try {
@@ -60,7 +61,35 @@ export async function GET(req: NextRequest) {
       ...searchResults.results.map((r: any) => `[${r.title}]: ${r.content}`),
     ].join("\n\n")
 
-    const prompt = `You are a professional equity analyst. Analyze ${companyName} (${ticker}).
+    const prompt = isETF
+      ? `You are a professional ETF analyst. Analyze the ETF ${companyName} (${ticker}).
+
+Use the research context below, but also apply your own knowledge of ${companyName}.
+
+RESEARCH CONTEXT:
+${context}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "businessOverview": "A detailed 3-4 sentence paragraph explaining what ${companyName} tracks or invests in, its investment strategy, index methodology or active approach, and who it is suited for.",
+  "strengths": [
+    "First key advantage of ${companyName} with specific detail (e.g. diversification, low cost, liquidity, index quality)",
+    "Second key advantage with specific detail",
+    "Third key advantage with specific detail"
+  ],
+  "weaknesses": [
+    "First key risk or limitation of ${companyName} with specific detail (e.g. concentration, sector tilt, tracking error, expense ratio vs peers)",
+    "Second key risk or limitation with specific detail",
+    "Third key risk or limitation with specific detail"
+  ]
+}
+
+Rules:
+- Always refer to the fund by name (${companyName}), never say "the fund" or "based on the context"
+- Be specific: mention actual index tracked, top holdings, sectors, or methodology
+- strengths: diversification, cost, liquidity, index quality, historical performance
+- weaknesses: concentration risk, sector bias, expense ratio vs peers, tracking error, or macro sensitivity`
+      : `You are a professional equity analyst. Analyze ${companyName} (${ticker}).
 
 Use the research context below, but also apply your own knowledge of ${companyName}.
 

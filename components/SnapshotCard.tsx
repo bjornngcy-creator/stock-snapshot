@@ -4,7 +4,7 @@ import { useState } from "react"
 import MetricChart from "./MetricChart"
 import MetricNA from "./MetricNA"
 import PriceChart from "./PriceChart"
-import type { MetricPoint, SnapshotFinancials } from "@/lib/financials"
+import type { MetricPoint, SnapshotFinancials, EtfHolding, EtfSectorWeight } from "@/lib/financials"
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 
@@ -262,6 +262,82 @@ function computeFlags(financials: SnapshotFinancials): TrendFlag[] {
   return flags
 }
 
+// ── ETF sub-components ────────────────────────────────────────────────────────
+
+function EtfReturns({ ytd, threeY, fiveY }: { ytd: number | null; threeY: number | null; fiveY: number | null }) {
+  const items = [
+    { label: "YTD", value: ytd },
+    { label: "3Y Ann.", value: threeY },
+    { label: "5Y Ann.", value: fiveY },
+  ]
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Returns</h3>
+      <div className="grid grid-cols-3 gap-4">
+        {items.map(({ label, value }) => (
+          <div key={label} className="text-center">
+            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+            {value != null ? (
+              <p className={`text-xl font-bold ${value >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                {value >= 0 ? "+" : ""}{(value * 100).toFixed(1)}%
+              </p>
+            ) : (
+              <p className="text-xl font-bold text-gray-300 dark:text-gray-600">—</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function EtfHoldingsCard({ holdings }: { holdings: EtfHolding[] }) {
+  if (holdings.length === 0) return null
+  const maxWeight = Math.max(...holdings.map((h) => h.weight))
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Top Holdings</h3>
+      <div className="space-y-2.5">
+        {holdings.map((h) => (
+          <div key={h.symbol} className="flex items-center gap-3">
+            <span className="text-xs font-mono text-gray-500 dark:text-gray-400 w-12 shrink-0">{h.symbol}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-700 dark:text-gray-300 truncate mb-1">{h.name}</p>
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(h.weight / maxWeight) * 100}%` }} />
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 w-10 text-right shrink-0">{h.weight.toFixed(1)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function EtfSectorCard({ sectors }: { sectors: EtfSectorWeight[] }) {
+  if (sectors.length === 0) return null
+  const maxWeight = Math.max(...sectors.map((s) => s.weight))
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
+      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Sector Allocation</h3>
+      <div className="space-y-2.5">
+        {sectors.map((s) => (
+          <div key={s.sector} className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-700 dark:text-gray-300 truncate mb-1 capitalize">{s.sector.replace(/([A-Z])/g, " $1").trim()}</p>
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(s.weight / maxWeight) * 100}%` }} />
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 w-10 text-right shrink-0">{s.weight.toFixed(1)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Analysis types ────────────────────────────────────────────────────────────
 
 interface AnalysisData {
@@ -355,22 +431,51 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
                 )}
               </div>
             )}
-            {financials.marketCap != null && (
-              <div className="text-right">
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">{financials.isETF ? "AUM" : "Market Cap"}</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {fmtMarketCap(financials.marketCap)}
-                </p>
-                {financials.earningsDate && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    Earnings: <span className="font-medium text-gray-600 dark:text-gray-300">{financials.earningsDate}</span>
-                  </p>
-                )}
-              </div>
+            {/* AUM (ETF) or Market Cap (stock) */}
+            {financials.isETF ? (
+              financials.aum != null && (
+                <div className="text-right">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">AUM</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{fmtMarketCap(financials.aum)}</p>
+                  {financials.etfCategory && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{financials.etfCategory}</p>
+                  )}
+                </div>
+              )
+            ) : (
+              financials.marketCap != null && (
+                <div className="text-right">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest">Market Cap</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{fmtMarketCap(financials.marketCap)}</p>
+                  {financials.earningsDate && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Earnings: <span className="font-medium text-gray-600 dark:text-gray-300">{financials.earningsDate}</span>
+                    </p>
+                  )}
+                </div>
+              )
             )}
 
-            {/* P/E trailing — bordered card */}
-            {financials.peRatio != null && (
+            {/* ETF: Expense Ratio + Yield */}
+            {financials.isETF && (
+              <>
+                {financials.expenseRatio != null && (
+                  <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Expense Ratio</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{(financials.expenseRatio * 100).toFixed(2)}%</p>
+                  </div>
+                )}
+                {financials.dividendYield != null && financials.dividendYield > 0 && (
+                  <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Div. Yield</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{(financials.dividendYield * 100).toFixed(2)}%</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Stock: P/E trailing */}
+            {!financials.isETF && financials.peRatio != null && (
               <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">P/E (Trailing)</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{financials.peRatio.toFixed(1)}x</p>
@@ -390,8 +495,8 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
               </div>
             )}
 
-            {/* Forward P/E — bordered card */}
-            {financials.forwardPE != null && (
+            {/* Stock: Forward P/E */}
+            {!financials.isETF && financials.forwardPE != null && (
               <div className="border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-right">
                 <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Forward P/E</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{financials.forwardPE.toFixed(1)}x</p>
@@ -561,8 +666,8 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full"
-                          style={{ width: `${Math.min(100, (holding.weight / (financials.topHoldings[0]?.weight || 1)) * 100)}%` }}
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.min(100, (holding.weight / (financials.topHoldings[0]?.weight || 1)) * 100)}%`, background: "#D4A93C" }}
                         />
                       </div>
                       <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 w-10 text-right">{holding.weight.toFixed(1)}%</span>
@@ -575,7 +680,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       )}
 
-      {/* 4. Metrics grid (stocks only) */}
+      {/* 4. Metrics grid — stocks only */}
       {!financials.isETF && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {METRICS.map(({ key, title, format, color, lowerIsBetter, showTrend, yoyMode, description }) => {
           const sector = financials.sector ?? ""
@@ -623,7 +728,7 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         })}
       </div>}
 
-      {/* 5. Trend flags (stocks only) */}
+      {/* 5. Trend flags — stocks only */}
       {!financials.isETF && flags.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
           <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
@@ -647,8 +752,8 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
         </div>
       )}
 
-      {/* 6. Analyst consensus */}
-      {financials.analystConsensus && (() => {
+      {/* 6. Analyst consensus — stocks only */}
+      {!financials.isETF && financials.analystConsensus && (() => {
         const ac = financials.analystConsensus!
         const total = ac.buy + ac.hold + ac.sell
         const buyPct  = total > 0 ? (ac.buy  / total) * 100 : 0

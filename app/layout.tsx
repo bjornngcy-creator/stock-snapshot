@@ -17,8 +17,8 @@ const dmSerifDisplay = DM_Serif_Display({
 })
 
 export const metadata: Metadata = {
-  title: "Stock Health Checker",
-  description: "Is this stock worth a closer look?",
+  title: "Equity Lens",
+  description: "A simple way to assess the health and quality of a business.",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
