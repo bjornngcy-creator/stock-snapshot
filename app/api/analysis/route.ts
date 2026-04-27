@@ -38,13 +38,15 @@ export async function GET(req: NextRequest) {
     ])
 
     if (cached) {
-      return NextResponse.json({
-        ticker,
-        companyName,
-        ...cached.data,
-        news: newsResults,
-        fromCache: true,
-      })
+      return NextResponse.json(
+        { ticker, companyName, ...cached.data, news: newsResults, fromCache: true },
+        {
+          headers: {
+            // Cache hits: CDN caches for 24h, serves stale for up to 7 days
+            "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+          },
+        }
+      )
     }
 
     // ── Cache miss — call Gemini + Tavily ────────────────────────────────
@@ -128,7 +130,15 @@ Rules:
     // ── Save to cache before responding (serverless stops on response) ───
     await setCachedAnalysis(ticker, companyName as string, parsed)
 
-    return NextResponse.json({ ticker, companyName, ...parsed, news: newsResults })
+    return NextResponse.json(
+      { ticker, companyName, ...parsed, news: newsResults },
+      {
+        headers: {
+          // Fresh Gemini result: CDN caches for 24h, serves stale for up to 7 days
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+        },
+      }
+    )
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

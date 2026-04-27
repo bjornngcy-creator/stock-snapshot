@@ -19,12 +19,16 @@ function getAuth() {
   })
 }
 
-// Fetch the actual first tab name so hardcoded "Sheet1" doesn't silently break
+// Cache the tab name in module scope — it never changes, no need to re-fetch per request
+let _cachedSheetName: string | null = null
+
 async function getFirstSheetName(): Promise<string> {
+  if (_cachedSheetName) return _cachedSheetName
   try {
     const sheets = google.sheets({ version: "v4", auth: getAuth() })
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID })
-    return meta.data.sheets?.[0]?.properties?.title ?? "Sheet1"
+    _cachedSheetName = meta.data.sheets?.[0]?.properties?.title ?? "Sheet1"
+    return _cachedSheetName
   } catch {
     return "Sheet1"
   }
