@@ -157,17 +157,17 @@ export default function Home() {
 
   if (gate === "gate") {
     return (
-      <main className="relative min-h-screen bg-[#06080f] flex items-center justify-center px-4 overflow-hidden">
+      <main className="relative min-h-screen bg-[#1A2636] flex items-center justify-center px-4 overflow-hidden">
 
         <div className="noise-overlay" />
 
         {/* Static gradient orbs */}
         <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(212,169,60,0.2) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(143,163,188,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)", filter: "blur(50px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(212,169,60,0.12) 0%, transparent 70%)", filter: "blur(50px)" }} />
 
         <div className="relative w-full max-w-md fade-in-up">
           {/* Glass card with visible glow border */}
@@ -180,7 +180,7 @@ export default function Home() {
               borderLeft: "1px solid rgba(255,255,255,0.08)",
               borderRight: "1px solid rgba(255,255,255,0.08)",
               borderBottom: "1px solid rgba(255,255,255,0.05)",
-              boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
+              boxShadow: "0 0 80px rgba(212,169,60,0.12), 0 25px 50px rgba(0,0,0,0.5)",
             }}>
 
             <a href="https://linktr.ee/investwithbjorn" target="_blank" rel="noopener noreferrer">
@@ -192,11 +192,11 @@ export default function Home() {
             </a>
 
             <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-3 leading-tight"
-                style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              <h1 className="text-3xl font-bold mb-3 leading-tight font-serif-display"
+                style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 Stock Health Checker
               </h1>
-              <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "#8FA3BC" }}>
                 Instant financial health checks on any stock — revenue trends, margins, analyst consensus, and AI-powered insights.
               </p>
             </div>
@@ -209,7 +209,7 @@ export default function Home() {
                 placeholder="Your first name"
                 className="w-full rounded-xl px-4 py-3 text-sm text-white transition-all outline-none"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
-                onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(212,169,60,0.7)"}
                 onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
               />
               <input
@@ -219,7 +219,7 @@ export default function Home() {
                 placeholder="Your email address"
                 className="w-full rounded-xl px-4 py-3 text-sm text-white transition-all outline-none"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
-                onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(212,169,60,0.7)"}
                 onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
               />
               {emailError && (
@@ -232,14 +232,14 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={emailSubmitting}
-                className="shimmer-btn w-full text-white font-semibold py-3 rounded-xl text-sm transition-all disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
+                className="shimmer-btn w-full font-semibold py-3 rounded-xl text-sm transition-all disabled:opacity-50"
+                style={{ color: "#1A2636", background: "linear-gradient(135deg, #D4A93C, #b8901f)", boxShadow: "0 8px 32px rgba(212,169,60,0.3)" }}
               >
                 {emailSubmitting ? "Getting access..." : "Get Free Access →"}
               </button>
             </form>
 
-            <p className="text-xs mt-5" style={{ color: "rgba(255,255,255,0.2)" }}>
+            <p className="text-xs mt-5" style={{ color: "rgba(143,163,188,0.5)" }}>
               Free forever · No spam · Unsubscribe anytime
             </p>
           </div>
@@ -251,14 +251,14 @@ export default function Home() {
   // ── Success screen ─────────────────────────────────────────────────────────
   if (gate === "success") {
     return (
-      <main className="relative min-h-screen bg-[#06080f] flex items-center justify-center px-4 overflow-hidden">
+      <main className="relative min-h-screen bg-[#1A2636] flex items-center justify-center px-4 overflow-hidden">
 
         <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full blob"
-          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(212,169,60,0.2) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full blob blob-delay-2"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.45) 0%, transparent 70%)", filter: "blur(60px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(143,163,188,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full blob blob-delay-4"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)", filter: "blur(50px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(212,169,60,0.12) 0%, transparent 70%)", filter: "blur(50px)" }} />
 
         <div className="relative w-full max-w-md fade-in-up">
           <div className="rounded-3xl p-8 text-center"
@@ -270,7 +270,7 @@ export default function Home() {
               borderLeft: "1px solid rgba(255,255,255,0.08)",
               borderRight: "1px solid rgba(255,255,255,0.08)",
               borderBottom: "1px solid rgba(255,255,255,0.05)",
-              boxShadow: "0 0 80px rgba(59,130,246,0.15), 0 25px 50px rgba(0,0,0,0.5)",
+              boxShadow: "0 0 80px rgba(212,169,60,0.12), 0 25px 50px rgba(0,0,0,0.5)",
             }}>
 
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -280,11 +280,11 @@ export default function Home() {
               </svg>
             </div>
 
-            <h2 className="text-3xl font-bold mb-2"
-              style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <h2 className="text-3xl font-bold mb-2 font-serif-display"
+              style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               You're in!
             </h2>
-            <p className="text-sm mb-7 leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm mb-7 leading-relaxed" style={{ color: "#8FA3BC" }}>
               Save your access link — bookmark it so you can come back anytime, even if your browser clears.
             </p>
 
@@ -296,17 +296,17 @@ export default function Home() {
               <button
                 onClick={handleCopyLink}
                 className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-                style={{ background: "rgba(59,130,246,0.2)", border: "1px solid rgba(96,165,250,0.3)", color: "#93c5fd" }}
+                style={{ background: "rgba(212,169,60,0.15)", border: "1px solid rgba(212,169,60,0.35)", color: "#D4A93C" }}
               >
                 {copied ? "Copied ✓" : "Copy"}
               </button>
             </div>
-            <p className="text-xs mb-7" style={{ color: "rgba(255,255,255,0.2)" }}>Bookmark this or save it somewhere safe</p>
+            <p className="text-xs mb-7" style={{ color: "rgba(143,163,188,0.5)" }}>Bookmark this or save it somewhere safe</p>
 
             <button
               onClick={() => setGate("tool")}
-              className="shimmer-btn w-full text-white font-semibold py-3 rounded-xl text-sm transition-all"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
+              className="shimmer-btn w-full font-semibold py-3 rounded-xl text-sm transition-all"
+              style={{ color: "#1A2636", background: "linear-gradient(135deg, #D4A93C, #b8901f)", boxShadow: "0 8px 32px rgba(212,169,60,0.3)" }}
             >
               Start Analysing →
             </button>
@@ -318,17 +318,17 @@ export default function Home() {
 
   // ── Tool ───────────────────────────────────────────────────────────────────
   return (
-    <main className="relative min-h-screen bg-[#06080f] py-10 px-3 sm:px-6 overflow-x-hidden">
+    <main className="relative min-h-screen bg-[#1A2636] py-10 px-3 sm:px-6 overflow-x-hidden">
 
       <div className="noise-overlay" />
 
       {/* Static background orbs */}
       <div className="pointer-events-none fixed top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(212,169,60,0.1) 0%, transparent 65%)", filter: "blur(80px)" }} />
       <div className="pointer-events-none fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 65%)", filter: "blur(80px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(143,163,188,0.08) 0%, transparent 65%)", filter: "blur(80px)" }} />
       <div className="pointer-events-none fixed top-[40%] right-[20%] w-[400px] h-[400px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 65%)", filter: "blur(70px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(212,169,60,0.06) 0%, transparent 65%)", filter: "blur(70px)" }} />
 
       <div className="relative max-w-6xl mx-auto">
 
@@ -391,22 +391,22 @@ export default function Home() {
               </div>
               <div className="sm:hidden flex items-start justify-between mb-1">
                 <div className="text-left">
-                  <h1 className="text-2xl font-bold mb-0.5"
-                    style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  <h1 className="text-2xl font-bold mb-0.5 font-serif-display"
+                    style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                     Stock Health Checker
                   </h1>
-                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
+                  <p className="text-sm" style={{ color: "#8FA3BC" }}>Is this stock worth a closer look?</p>
                 </div>
                 {themeBtn}
               </div>
 
               {/* Desktop: brand+socials left, title center, toggle right */}
               <div className="hidden sm:block relative text-center">
-                <h1 className="text-3xl font-bold mb-1"
-                  style={{ background: "linear-gradient(135deg, #ffffff 0%, #bfdbfe 50%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                <h1 className="text-3xl font-bold mb-1 font-serif-display"
+                  style={{ background: "linear-gradient(135deg, #ffffff 0%, #F5F3EE 50%, #D4A93C 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                   Stock Health Checker
                 </h1>
-                <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Is this stock worth a closer look?</p>
+                <p className="text-sm" style={{ color: "#8FA3BC" }}>Is this stock worth a closer look?</p>
                 <div className="absolute left-0 top-0 flex flex-col items-start gap-1.5">
                   <img src="/bjorn-banner.png" alt="Invest with Bjorn" className="w-[120px] h-auto rounded-xl object-contain" />
                   {socialIcons}
@@ -429,7 +429,7 @@ export default function Home() {
               placeholder="Enter ticker (e.g. AAPL)"
               className="rounded-xl px-4 py-3 pr-10 text-sm w-full text-white placeholder-gray-500 outline-none transition-all"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
-              onFocus={e => e.currentTarget.style.border = "1px solid rgba(96,165,250,0.6)"}
+              onFocus={e => e.currentTarget.style.border = "1px solid rgba(212,169,60,0.7)"}
               onBlur={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"}
             />
             {/* Info icon */}
@@ -470,8 +470,8 @@ export default function Home() {
                     ["🇸🇬 Singapore (.SI)", "D05.SI"],
                   ].map(([label, example]) => (
                     <div key={label} className="flex justify-between items-center">
-                      <span style={{ color: "rgba(255,255,255,0.5)" }}>{label}</span>
-                      <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.07)", color: "#93c5fd" }}>{example}</span>
+                      <span style={{ color: "#8FA3BC" }}>{label}</span>
+                      <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.07)", color: "#D4A93C" }}>{example}</span>
                     </div>
                   ))}
                 </div>
@@ -481,8 +481,8 @@ export default function Home() {
           <button
             onClick={handleAnalyze}
             disabled={isLoading}
-            className="shimmer-btn text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all disabled:opacity-50 w-full sm:w-auto"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 8px 32px rgba(59,130,246,0.35)" }}
+            className="shimmer-btn font-semibold px-6 py-3 rounded-xl text-sm transition-all disabled:opacity-50 w-full sm:w-auto"
+            style={{ color: "#1A2636", background: "linear-gradient(135deg, #D4A93C, #b8901f)", boxShadow: "0 8px 32px rgba(212,169,60,0.3)" }}
           >
             {loading === "financials"
               ? "Fetching data..."
@@ -501,7 +501,7 @@ export default function Home() {
             History
             {history.length > 0 && (
               <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: "rgba(59,130,246,0.25)", color: "#93c5fd" }}>
+                style={{ background: "rgba(212,169,60,0.2)", color: "#D4A93C" }}>
                 {history.length}
               </span>
             )}
@@ -536,7 +536,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold transition-colors hover:opacity-80"
-            style={{ color: "rgba(255,255,255,0.5)" }}
+            style={{ color: "#8FA3BC" }}
           >
             Invest with Bjorn
           </a>

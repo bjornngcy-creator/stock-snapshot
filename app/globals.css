@@ -2,6 +2,21 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ── Brand tokens ─────────────────────────────────────────────────────── */
+:root {
+  --navy:      #1A2636;
+  --gold:      #D4A93C;
+  --off-white: #F5F3EE;
+  --steel:     #8FA3BC;
+  --alert-red: #E24B4A;
+  --font-serif: var(--font-dm-serif), "DM Serif Display", serif;
+  --font-sans:  var(--font-dm-sans),  "DM Sans", sans-serif;
+}
+
+.font-serif-display {
+  font-family: var(--font-serif);
+}
+
 /* ── Animations ───────────────────────────────────────────────────────── */
 
 @keyframes fade-in-up {
