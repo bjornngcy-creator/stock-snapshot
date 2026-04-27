@@ -11,14 +11,31 @@ const yf = new YahooFinance({
 
 export const dynamic = "force-dynamic"
 
-async function fetchYahooNews(ticker: string): Promise<{ title: string; publisher: string; url: string }[]> {
+async function fetchYahooNews(ticker: string): Promise<{
+  title: string; publisher: string; url: string; thumbnailUrl?: string; publishedAt?: string
+}[]> {
   try {
-    const result = await yf.search(ticker, { newsCount: 5, quotesCount: 0 })
-    return (result.news ?? []).slice(0, 5).map((item: any) => ({
-      title: item.title,
-      publisher: item.publisher ?? "",
-      url: item.link,
-    }))
+    const result = await yf.search(ticker, { newsCount: 6, quotesCount: 0 })
+    return (result.news ?? []).slice(0, 6).map((item: any) => {
+      // Pick the largest thumbnail resolution available
+      const resolutions: { url: string; width: number; tag: string }[] =
+        item.thumbnail?.resolutions ?? []
+      const thumb =
+        resolutions.find((r) => r.tag === "original") ??
+        resolutions.sort((a, b) => b.width - a.width)[0]
+      // providerPublishTime is already a Date object
+      const date: Date | undefined = item.providerPublishTime
+      const publishedAt = date
+        ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : undefined
+      return {
+        title: item.title,
+        publisher: item.publisher ?? "",
+        url: item.link,
+        thumbnailUrl: thumb?.url ?? undefined,
+        publishedAt,
+      }
+    })
   } catch {
     return []
   }

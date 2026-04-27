@@ -344,7 +344,7 @@ interface AnalysisData {
   businessOverview: string
   strengths: string[]
   weaknesses: string[]
-  news?: { title: string; publisher: string; url: string }[]
+  news?: { title: string; publisher: string; url: string; thumbnailUrl?: string; publishedAt?: string }[]
 }
 
 interface Props {
@@ -801,29 +801,66 @@ export default function SnapshotCard({ financials, analysis, analysisLoading }: 
       {/* 7. News */}
       {analysis?.news && analysis.news.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-3 sm:p-5">
-          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">
             Recent News
           </h3>
-          <ul className="space-y-3">
-            {analysis.news.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-gray-300 dark:text-gray-600 text-sm mt-0.5 shrink-0">→</span>
-                <div>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline leading-snug line-clamp-2"
-                  >
-                    {item.title}
-                  </a>
-                  {item.publisher && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.publisher}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
+            {analysis.news.map((item, i) => {
+              const isLast = i === analysis.news!.length - 1
+              const isSecondLast = i === analysis.news!.length - 2
+              const hideBorderBottom =
+                isLast || (analysis.news!.length % 2 === 0 ? isSecondLast : false)
+              return (
+                <a
+                  key={i}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex gap-3 p-3 -mx-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group ${
+                    !hideBorderBottom ? "border-b border-gray-100 dark:border-gray-700 sm:border-b-0" : ""
+                  } ${
+                    // right-column items get a left divider on desktop
+                    i % 2 === 1 ? "sm:border-l sm:border-gray-100 sm:dark:border-gray-700" : ""
+                  }`}
+                >
+                  {/* Thumbnail */}
+                  {item.thumbnailUrl ? (
+                    <img
+                      src={item.thumbnailUrl}
+                      alt=""
+                      className="w-20 h-16 sm:w-24 sm:h-[72px] rounded-lg object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                    />
+                  ) : (
+                    <div className="w-20 h-16 sm:w-24 sm:h-[72px] rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                      </svg>
+                    </div>
                   )}
-                </div>
-              </li>
-            ))}
-          </ul>
+                  {/* Text */}
+                  <div className="flex flex-col justify-between min-w-0 py-0.5">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug line-clamp-3 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                      {item.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {item.publisher && (
+                        <span className="text-xs font-semibold" style={{ color: "#D4A93C" }}>
+                          {item.publisher}
+                        </span>
+                      )}
+                      {item.publisher && item.publishedAt && (
+                        <span className="text-xs text-gray-300 dark:text-gray-600">·</span>
+                      )}
+                      {item.publishedAt && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{item.publishedAt}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
         </div>
       )}
 

@@ -16,7 +16,7 @@ interface AnalysisData {
   businessOverview: string
   strengths: string[]
   weaknesses: string[]
-  news?: { title: string; publisher: string; url: string }[]
+  news?: { title: string; publisher: string; url: string; thumbnailUrl?: string; publishedAt?: string }[]
 }
 
 type Gate = "loading" | "gate" | "success" | "tool"
