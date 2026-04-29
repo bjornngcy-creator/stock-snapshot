@@ -175,17 +175,19 @@ export default function Home() {
 
   if (gate === "gate") {
     return (
-      <main className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden" style={{ background: "var(--page-bg)" }}>
+      <main className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden" style={{ background: "var(--page-bg)" }}>
 
         <div className="noise-overlay" />
 
-        {/* Gradient orbs */}
+        {/* Static gradient orbs */}
         <div className="absolute top-[-15%] left-[-15%] w-[600px] h-[600px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(212,169,60,0.2) 0%, transparent 70%)", filter: "blur(60px)" }} />
         <div className="absolute bottom-[-15%] right-[-10%] w-[550px] h-[550px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(143,163,188,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(212,169,60,0.12) 0%, transparent 70%)", filter: "blur(50px)" }} />
 
-        <div className="relative w-full max-w-lg fade-in-up">
+        <div className="relative w-full max-w-md fade-in-up">
           <div className="rounded-3xl p-8 text-center"
             style={{
               background: "var(--card-bg)",
@@ -198,41 +200,65 @@ export default function Home() {
               boxShadow: "var(--card-shadow)",
             }}>
 
-            {/* Title */}
-            <h1 className="text-3xl font-bold mb-2 leading-tight font-serif-display"
-              style={{ background: "var(--heading-gradient)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              Equity Lens
-            </h1>
-            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--secondary-color)" }}>
-              Subscribe to get free access — assess the health and quality of any stock or ETF instantly.
-            </p>
-
-            {/* Substack embed */}
-            <div className="rounded-2xl overflow-hidden mb-5">
-              <iframe
-                src="https://investwithbjorn.substack.com/embed"
-                width="100%"
-                height="320"
-                frameBorder="0"
-                scrolling="no"
-                style={{ display: "block" }}
+            <a href="https://linktr.ee/investwithbjorn" target="_blank" rel="noopener noreferrer">
+              <img
+                src="/bjorn-banner.png"
+                alt="Invest with Bjorn"
+                className="h-12 w-auto mx-auto rounded-xl object-contain mb-7 opacity-80 hover:opacity-100 transition-opacity"
               />
+            </a>
+
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold mb-3 leading-tight font-serif-display"
+                style={{ background: "var(--heading-gradient)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                Equity Lens
+              </h1>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--secondary-color)" }}>
+                A simple way to assess the health and quality of a business — revenue trends, margins, analyst consensus, and AI-powered insights.
+              </p>
             </div>
 
-            {/* Access button */}
-            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-              Already subscribed or just subscribed above?
+            <form onSubmit={handleEmailSubmit} className="space-y-3 text-left">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your first name"
+                className="w-full rounded-xl px-4 py-3 text-sm transition-all outline-none"
+                style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--input-text)" }}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(212,169,60,0.7)"}
+                onBlur={e => e.currentTarget.style.border = "1px solid var(--input-border)"}
+              />
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="Your email address"
+                className="w-full rounded-xl px-4 py-3 text-sm transition-all outline-none"
+                style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--input-text)" }}
+                onFocus={e => e.currentTarget.style.border = "1px solid rgba(212,169,60,0.7)"}
+                onBlur={e => e.currentTarget.style.border = "1px solid var(--input-border)"}
+              />
+              {emailError && (
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+                  style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                  <span className="text-red-400 shrink-0 text-xs">✕</span>
+                  <p className="text-red-400 text-sm">{emailError}</p>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={emailSubmitting}
+                className="shimmer-btn w-full font-semibold py-3 rounded-xl text-sm transition-all disabled:opacity-50"
+                style={{ color: "#1A2636", background: "linear-gradient(135deg, #D4A93C, #b8901f)", boxShadow: "0 8px 32px rgba(212,169,60,0.3)" }}
+              >
+                {emailSubmitting ? "Getting access..." : "Get Free Access →"}
+              </button>
+            </form>
+
+            <p className="text-xs mt-5" style={{ color: "var(--text-muted)" }}>
+              Free forever · No spam · Unsubscribe anytime
             </p>
-            <button
-              onClick={() => {
-                localStorage.setItem("stock-snapshot-access", "1")
-                setGate("success")
-              }}
-              className="shimmer-btn w-full font-semibold py-3 rounded-xl text-sm transition-all"
-              style={{ color: "#1A2636", background: "linear-gradient(135deg, #D4A93C, #b8901f)", boxShadow: "0 8px 32px rgba(212,169,60,0.3)" }}
-            >
-              Start Analysing →
-            </button>
           </div>
         </div>
       </main>
