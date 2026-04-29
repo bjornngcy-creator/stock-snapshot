@@ -72,25 +72,29 @@ export default function Home() {
     setEmailError("")
     setEmailSubmitting(true)
 
-    await Promise.allSettled([
-      // 1. Google Sheets backup (server-side)
-      fetch("/api/capture-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
-      }),
-      // 2. Substack subscribe (browser-direct — avoids server-side blocking)
-      fetch("https://investwithbjorn.substack.com/api/v1/free", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        mode: "no-cors",
-        body: JSON.stringify({
-          email,
-          first_url: window.location.href,
-          first_referrer: document.referrer,
-        }),
-      }),
-    ])
+    // 1. Google Sheets backup (server-side)
+    fetch("/api/capture-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email }),
+    }).catch(() => {})
+
+    // 2. Substack subscribe — real HTML form POST into hidden iframe
+    // (browser-direct avoids server-side blocking; iframe keeps user on page)
+    const iframe = document.getElementById("substack-iframe") as HTMLIFrameElement
+    const form = document.createElement("form")
+    form.method = "POST"
+    form.action = "https://investwithbjorn.substack.com/api/v1/free"
+    form.target = "substack-iframe"
+    form.style.display = "none"
+    const emailField = document.createElement("input")
+    emailField.type = "hidden"
+    emailField.name = "email"
+    emailField.value = email
+    form.appendChild(emailField)
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
 
     localStorage.setItem("stock-snapshot-access", "1")
     setEmailSubmitting(false)
@@ -258,6 +262,9 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {/* Hidden iframe — Substack form posts into this so page doesn't navigate */}
+        <iframe id="substack-iframe" name="substack-iframe" style={{ display: "none" }} />
       </main>
     )
   }
@@ -299,23 +306,8 @@ export default function Home() {
               You're in!
             </h2>
             <p className="text-sm mb-7 leading-relaxed" style={{ color: "var(--secondary-color)" }}>
-              Save your access link — bookmark it so you can come back anytime, even if your browser clears.
+              Check your inbox — you'll receive a confirmation email from Substack shortly.
             </p>
-
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3 mb-2"
-              style={{ background: "var(--secondary-bg)", border: "1px solid var(--secondary-border)" }}>
-              <span className="text-sm flex-1 text-left truncate font-mono" style={{ color: "var(--text-url)" }}>
-                {TOOL_URL}
-              </span>
-              <button
-                onClick={handleCopyLink}
-                className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-                style={{ background: "rgba(212,169,60,0.15)", border: "1px solid rgba(212,169,60,0.35)", color: "#D4A93C" }}
-              >
-                {copied ? "Copied ✓" : "Copy"}
-              </button>
-            </div>
-            <p className="text-xs mb-7" style={{ color: "var(--text-muted)" }}>Bookmark this or save it somewhere safe</p>
 
             <button
               onClick={() => setGate("tool")}
