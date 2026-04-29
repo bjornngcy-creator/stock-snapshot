@@ -71,13 +71,27 @@ export default function Home() {
     }
     setEmailError("")
     setEmailSubmitting(true)
-    try {
-      await fetch("/api/capture-email", {
+
+    await Promise.allSettled([
+      // 1. Google Sheets backup (server-side)
+      fetch("/api/capture-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
-      })
-    } catch { /* silently continue — don't block access on Sheets failure */ }
+      }),
+      // 2. Substack subscribe (browser-direct — avoids server-side blocking)
+      fetch("https://investwithbjorn.substack.com/api/v1/free", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
+        body: JSON.stringify({
+          email,
+          first_url: window.location.href,
+          first_referrer: document.referrer,
+        }),
+      }),
+    ])
+
     localStorage.setItem("stock-snapshot-access", "1")
     setEmailSubmitting(false)
     setGate("success")
