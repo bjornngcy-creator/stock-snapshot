@@ -72,29 +72,12 @@ export default function Home() {
     setEmailError("")
     setEmailSubmitting(true)
 
-    // 1. Google Sheets backup (server-side)
+    // Save to Google Sheets
     fetch("/api/capture-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email }),
     }).catch(() => {})
-
-    // 2. Substack subscribe — real HTML form POST into hidden iframe
-    // (browser-direct avoids server-side blocking; iframe keeps user on page)
-    const iframe = document.getElementById("substack-iframe") as HTMLIFrameElement
-    const form = document.createElement("form")
-    form.method = "POST"
-    form.action = "https://investwithbjorn.substack.com/api/v1/free"
-    form.target = "substack-iframe"
-    form.style.display = "none"
-    const emailField = document.createElement("input")
-    emailField.type = "hidden"
-    emailField.name = "email"
-    emailField.value = email
-    form.appendChild(emailField)
-    document.body.appendChild(form)
-    form.submit()
-    document.body.removeChild(form)
 
     localStorage.setItem("stock-snapshot-access", "1")
     setEmailSubmitting(false)
@@ -302,7 +285,7 @@ export default function Home() {
               You're in!
             </h2>
             <p className="text-sm mb-7 leading-relaxed" style={{ color: "var(--secondary-color)" }}>
-              Check your inbox — you'll receive a confirmation email from Substack shortly.
+              Welcome aboard! Click below to start exploring.
             </p>
 
             <button
