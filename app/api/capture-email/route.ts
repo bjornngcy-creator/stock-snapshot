@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { captureEmail } from "@/lib/sheets"
 
 export const dynamic = "force-dynamic"
 
@@ -6,14 +7,18 @@ const SUBSTACK_URL = "https://investwithbjorn.substack.com/api/v1/free"
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json()
+    const { name, email } = await req.json()
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 })
     }
 
     const cleanEmail = email.toLowerCase().trim()
+    const cleanName  = (name ?? "").trim()
 
-    await fetch(SUBSTACK_URL, {
+    // Run Sheets backup + Substack subscribe in parallel
+    await Promise.allSettled([
+      captureEmail(cleanEmail, cleanName),
+      fetch(SUBSTACK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -26,7 +31,8 @@ export async function POST(req: NextRequest) {
         first_url: "https://investwithbjorn.substack.com",
         first_referrer: "",
       }),
-    })
+    }),
+    ])
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {
